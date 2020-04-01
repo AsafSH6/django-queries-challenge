@@ -1,0 +1,5 @@
+*.pyc
+*sqlite3
+.idea/
+hints
+querysets_solutions.py
