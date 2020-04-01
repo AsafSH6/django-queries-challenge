@@ -207,7 +207,7 @@ class Covid19Tests(TestCase):
             self.assertEqual(num_of_patient_examined_by_sick_hospital_worker, 1)
             self.assertListEqual(list(patient_examined_by_sick_hospital_worker), [self.patient1])
 
-        # Now improve the test to use only single DB hit
+        # Now improve the test to hit DB once only
         with self.assertNumQueries(1):
             patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
                 hospital_workers=NotImplementedError
