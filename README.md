@@ -1,4 +1,4 @@
-# Django Advance Database Queries Challenge
+# Django Advanced Database Queries Challenge
 
 _Django ORM is awesome and this challenge will help you to understand why_
 
