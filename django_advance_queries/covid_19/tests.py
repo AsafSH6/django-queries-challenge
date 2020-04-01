@@ -248,3 +248,8 @@ class Covid19Tests(TestCase):
 
             self.assertListEqual(list(hospitals_with_more_than_two_dead_patients_from_corona),
                                  [self.hospital2])
+
+    def test_define_new_test_and_send_to_me(self):
+        # Define test that use at least one function that was not used in the previous tests and send to me
+        # Include the solution
+        self.fail()
