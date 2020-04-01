@@ -4,10 +4,14 @@ _Django ORM is awesome and this challenge will help you to understand why_
 
 ---   
 
-**Django 1.11**
 
 The challenge is to implement database queries as required in ``tests.py`` so all tests will pass   
-There are 10 tests that based on covid19 app which define database models and relations    
+There are 10 tests that based on covid19 app which define database models and relations   
+    
+    
+**Django 1.11**
+* pip install -r requirements.txt
+* python manage migrate --settings=django_advanced_queries.settings    
 
 Sources of information:
 * https://levelup.gitconnected.com/demystifying-complex-queries-for-django-orm-2297d3bfbd2f
