@@ -20,7 +20,6 @@ class Department(models.Model):
     hospital = models.ForeignKey(
         to=Hospital,
         related_name='departments',
-        db_index=True,
         null=False,
         blank=False,
         on_delete=models.CASCADE,
@@ -100,7 +99,6 @@ class Patient(models.Model):
     department = models.ForeignKey(
         to=Department,
         related_name='patients_details',
-        db_index=True,
         null=False,
         blank=False,
         on_delete=models.CASCADE,
@@ -133,7 +131,6 @@ class MedicalExaminationResult(models.Model):
     patient = models.ForeignKey(
         to=Patient,
         related_name='medical_examination_results',
-        db_index=True,
         null=False,
         blank=False,
         on_delete=models.CASCADE,
