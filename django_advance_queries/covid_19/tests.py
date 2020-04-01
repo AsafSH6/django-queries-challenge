@@ -88,7 +88,6 @@ class Covid19Tests(TestCase):
             patient=self.patient4,
             result='Healthy'
         )
-
         MedicalExaminationResult.objects.create(
             time=datetime.datetime(year=2020, month=4, day=26, hour=18, minute=01),
             examined_by=self.hospital_worker2,
@@ -144,13 +143,27 @@ class Covid19Tests(TestCase):
             patient=self.patient6,
             result='Dead'
         )
+        person9 = Person.objects.create(name='Daniel', age=3, gender='Male')
+        self.patient7 = Patient.objects.create(person=person9, department=department2)
+        MedicalExaminationResult.objects.create(
+            time=datetime.datetime(year=2020, month=4, day=26, hour=15, minute=15),
+            examined_by=self.hospital_worker3,
+            patient=self.patient7,
+            result='Healthy'
+        )
+        MedicalExaminationResult.objects.create(
+            time=datetime.datetime(year=2020, month=4, day=27, hour=21, minute=53),
+            examined_by=self.hospital_worker3,
+            patient=self.patient7,
+            result='Botism'
+        )
 
     def test_num_of_hospitalized_because_of_botism(self):
         with self.assertNumQueries(1):
             num_of_hospitalized_because_of_botism = Patient.objects.filter_by_examination_results(
                 results=['Botism']
             ).count()
-            self.assertEqual(num_of_hospitalized_because_of_botism, 1)
+            self.assertEqual(num_of_hospitalized_because_of_botism, 2)
 
     def test_highest_num_of_patient_medical_examinations(self):
         with self.assertNumQueries(1):
@@ -163,7 +176,7 @@ class Covid19Tests(TestCase):
 
             actual_result = [department.avg_age_of_patients
                              for department in departments_with_avg_age_of_patients.order_by()]
-            self.assertEqual(actual_result, [36, 88.5])
+            self.assertEqual(actual_result, [36, 60])
 
     def test_doctor_performed_the_most_medical_examinations(self):
         with self.assertNumQueries(1):
@@ -173,6 +186,11 @@ class Covid19Tests(TestCase):
             )
 
             self.assertEqual(doctor_performed_the_most_m_e, self.hospital_worker3)
+
+    def test_num_of_sick_persons(self):
+        with self.assertNumQueries(1):
+            sick_persons = Person.objects.get_sick_persons()
+            self.assertEqual(sick_persons.count(), 3)
 
     def test_num_of_sick_hospital_workers(self):
         with self.assertNumQueries(1):
@@ -210,11 +228,23 @@ class Covid19Tests(TestCase):
             hospital2_num_of_hospital_workers_in_risk_of_corona = result[1].num_of_hospital_workers_in_risk_of_corona
             self.assertEqual(hospital2_num_of_hospital_workers_in_risk_of_corona, 1)
 
+    def test_annotate_by_num_of_dead_from_corona(self):
+        # Dead from corona is someone who had corona and then died
+        with self.assertNumQueries(1):
+            result = Hospital.objects.\
+                annotate_by_num_of_dead_from_corona().order_by()
+
+            hospital1_num_of_dead_from_corona = result[0].num_of_dead_from_corona
+            self.assertEqual(hospital1_num_of_dead_from_corona, 0)
+
+            hospital2_num_of_dead_from_corona = result[1].num_of_dead_from_corona
+            self.assertEqual(hospital2_num_of_dead_from_corona, 2)
+
     def test_hospitals_with_at_least_two_dead_patients_from_corona(self):
         # Dead from corona is someone who had corona and then died
         with self.assertNumQueries(1):
-            hospitals_with_more_than_two_dead_patients_from_corona = Hospital.objects.\
-                annotate_by_num_of_dead_from_corona().filter(num_of_dead_from_corona__gte=2)
+            # Define query by yourself
+            hospitals_with_more_than_two_dead_patients_from_corona = None
 
             self.assertListEqual(list(hospitals_with_more_than_two_dead_patients_from_corona),
                                  [self.hospital2])
