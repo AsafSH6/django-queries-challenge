@@ -5,7 +5,7 @@ import datetime
 
 from django.test import TestCase
 
-from django_advance_queries.covid_19.models import (
+from django_advanced_queries.covid_19.models import (
     Hospital,
     Department,
     Person,

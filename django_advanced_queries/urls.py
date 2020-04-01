@@ -1,4 +1,4 @@
-"""django_advance_queries URL Configuration
+"""django_advanced_queries URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/1.11/topics/http/urls/

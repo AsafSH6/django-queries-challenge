@@ -5,4 +5,4 @@ from django.apps import AppConfig
 
 
 class Covid19Config(AppConfig):
-    name = 'django_advance_queries.covid_19'
+    name = 'django_advanced_queries.covid_19'
