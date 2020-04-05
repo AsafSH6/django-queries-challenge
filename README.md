@@ -11,7 +11,7 @@ There are 10 tests that based on covid19 app which define database models and re
     
 **Django 1.11**
 * pip install -r requirements.txt
-* python manage migrate --settings=django_advanced_queries.settings    
+* python manage.py migrate --settings=django_advanced_queries.settings    
 
 Sources of information:
 * https://levelup.gitconnected.com/demystifying-complex-queries-for-django-orm-2297d3bfbd2f
