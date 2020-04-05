@@ -2,7 +2,11 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django_advanced_queries.covid_19.managers import DepartmentManager, HospitalWorkerManager, PatientManager
+from django_advanced_queries.covid_19.managers import (
+    DepartmentManager,
+    HospitalWorkerManager,
+    PatientManager
+)
 
 class Hospital(models.Model):
     name = models.CharField(db_index=True, max_length=255, blank=False, null=False, )
@@ -16,7 +20,6 @@ class Hospital(models.Model):
 
 
 class Department(models.Model):
-    objects = DepartmentManager()
     name = models.CharField(max_length=255, blank=False, null=False, )
     hospital = models.ForeignKey(
         to=Hospital,
@@ -25,6 +28,7 @@ class Department(models.Model):
         blank=False,
         on_delete=models.CASCADE,
     )
+    objects = DepartmentManager()
 
     def __repr__(self):
         return '<Department {department_name} in hospital {hospital}>'.format(
@@ -57,7 +61,6 @@ class Person(models.Model):
 
 
 class HospitalWorker(models.Model):
-    objects = HospitalWorkerManager()
     POSITION_DOCTOR = 'Doctor'
     POSITION_NURSE = 'Nurse'
 
@@ -78,6 +81,7 @@ class HospitalWorker(models.Model):
         (POSITION_DOCTOR, POSITION_DOCTOR),
         (POSITION_NURSE, POSITION_NURSE),
     ))
+    objects = HospitalWorkerManager()
 
     def __repr__(self):
         return '<Hospital worker {person}, working in {department} position {position}>'.format(
@@ -91,7 +95,6 @@ class HospitalWorker(models.Model):
 
 
 class Patient(models.Model):
-    objects = PatientManager()
     person = models.ForeignKey(
         to=Person,
         related_name='patients_details',
@@ -106,6 +109,7 @@ class Patient(models.Model):
         blank=False,
         on_delete=models.CASCADE,
     )
+    objects = PatientManager()
 
     def __repr__(self):
         return '<Patient {person} in {department}>'.format(
