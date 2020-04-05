@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models import Max, Count, Avg
 
 
 class Hospital(models.Model):
@@ -15,7 +16,13 @@ class Hospital(models.Model):
         return repr(self)
 
 
+class DepartmentManager(models.Manager):
+    def annotate_avg_age_of_patients(self):
+        return Department.objects.annotate(avg_age_of_patients = Avg('patients_details__person__age'))
+
+
 class Department(models.Model):
+    objects = DepartmentManager()
     name = models.CharField(max_length=255, blank=False, null=False, )
     hospital = models.ForeignKey(
         to=Hospital,
@@ -54,8 +61,13 @@ class Person(models.Model):
     def __unicode__(self):
         return repr(self)
 
+class HospitalWorkerManager(models.Manager):
+    def get_worker_performed_most_medical_examinations(self, filter_kwargs, exclude_kwargs):
+        return NotImplemented
+
 
 class HospitalWorker(models.Model):
+    objects = HospitalWorkerManager()
     POSITION_DOCTOR = 'Doctor'
     POSITION_NURSE = 'Nurse'
 
@@ -88,7 +100,16 @@ class HospitalWorker(models.Model):
         return repr(self)
 
 
+class PatientManager(models.Manager):
+    def filter_by_examination_results(self, results):
+        return Patient.objects.filter(medical_examination_results__result__in=results)
+
+    def get_highest_num_of_patient_medical_examinations(self):
+        return Patient.objects.annotate(exam_res_count = Count('medical_examination_results')).aggregate(max_exam_res = Max('exam_res_count'))['max_exam_res']
+
+
 class Patient(models.Model):
+    objects = PatientManager()
     person = models.ForeignKey(
         to=Person,
         related_name='patients_details',

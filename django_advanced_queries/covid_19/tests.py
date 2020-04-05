@@ -28,7 +28,7 @@ class Covid19Tests(TestCase):
             city='Be\'er Ya\'akov',
         )
         department1 = Department.objects.create(name='Critical Care', hospital=self.hospital1)
-        person1 = Person.objects.create(name='Alon', age=65, gender='Male')
+        person1 = Person.objects.create(name='Alon', age=65, gender='Male') # Corona
         self.hospital_worker1 = HospitalWorker.objects.create(
             person=person1,
             department=department1,
@@ -39,8 +39,8 @@ class Covid19Tests(TestCase):
             person=person2,
             department=department1,
             position='Nurse',
-        )
-        person3 = Person.objects.create(name='Rony', age=33, gender='Female')
+        ) # Racist
+        person3 = Person.objects.create(name='Rony', age=33, gender='Female') # Corona bot
         self.patient1 = Patient.objects.create(person=person3, department=department1)
         MedicalExaminationResult.objects.create(
             time=datetime.datetime(year=2020, month=3, day=21, hour=14, minute=3),
@@ -66,7 +66,7 @@ class Covid19Tests(TestCase):
             person=person4,
             department=department1,
             position='Doctor',
-        )
+        ) # Successful, very hot
         self.patient3 = Patient.objects.create(person=person4, department=department1)
         MedicalExaminationResult.objects.create(
             time=datetime.datetime(year=2020, month=3, day=21, hour=17, minute=54),
@@ -74,7 +74,7 @@ class Covid19Tests(TestCase):
             patient=self.patient3,
             result='Healthy'
         )
-        person5 = Person.objects.create(name='Yoav', age=21, gender='Other')
+        person5 = Person.objects.create(name='Yoav', age=21, gender='Other') # Maman healed from corona
         self.patient4 = Patient.objects.create(person=person5, department=department1)
         MedicalExaminationResult.objects.create(
             time=datetime.datetime(year=2020, month=3, day=20, hour=12, minute=13),
@@ -122,7 +122,7 @@ class Covid19Tests(TestCase):
             examined_by=self.hospital_worker3,
             patient=self.patient5,
             result='Dead'
-        )
+        ) # SAD
         person8 = Person.objects.create(name='Lea', age=90, gender='Female')
         self.patient6 = Patient.objects.create(person=person8, department=department2)
         MedicalExaminationResult.objects.create(
@@ -142,8 +142,8 @@ class Covid19Tests(TestCase):
             examined_by=self.hospital_worker3,
             patient=self.patient6,
             result='Dead'
-        )
-        person9 = Person.objects.create(name='Daniel', age=3, gender='Male')
+        ) # SAD
+        person9 = Person.objects.create(name='Daniel', age=3, gender='Male') # Young bot
         self.patient7 = Patient.objects.create(person=person9, department=department2)
         MedicalExaminationResult.objects.create(
             time=datetime.datetime(year=2020, month=4, day=26, hour=15, minute=15),
