@@ -2,8 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.db.models import Max, Count, Avg
-
+from django_advanced_queries.covid_19.managers import DepartmentManager, HospitalWorkerManager, PatientManager
 
 class Hospital(models.Model):
     name = models.CharField(db_index=True, max_length=255, blank=False, null=False, )
@@ -14,11 +13,6 @@ class Hospital(models.Model):
 
     def __unicode__(self):
         return repr(self)
-
-
-class DepartmentManager(models.Manager):
-    def annotate_avg_age_of_patients(self):
-        return Department.objects.annotate(avg_age_of_patients = Avg('patients_details__person__age'))
 
 
 class Department(models.Model):
@@ -61,10 +55,6 @@ class Person(models.Model):
     def __unicode__(self):
         return repr(self)
 
-class HospitalWorkerManager(models.Manager):
-    def get_worker_performed_most_medical_examinations(self, filter_kwargs, exclude_kwargs):
-        return NotImplemented
-
 
 class HospitalWorker(models.Model):
     objects = HospitalWorkerManager()
@@ -98,14 +88,6 @@ class HospitalWorker(models.Model):
 
     def __unicode__(self):
         return repr(self)
-
-
-class PatientManager(models.Manager):
-    def filter_by_examination_results(self, results):
-        return Patient.objects.filter(medical_examination_results__result__in=results)
-
-    def get_highest_num_of_patient_medical_examinations(self):
-        return Patient.objects.annotate(exam_res_count = Count('medical_examination_results')).aggregate(max_exam_res = Max('exam_res_count'))['max_exam_res']
 
 
 class Patient(models.Model):
