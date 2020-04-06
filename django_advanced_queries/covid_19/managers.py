@@ -14,8 +14,8 @@ class HospitalWorkerManager(Manager):
 
 
 class PatientManager(Manager):
-    def filter_by_examination_results(self, results):
-        return self.filter(medical_examination_results__result__in=results)
+    def filter_by_examination_results(self, results, *args, **kwargs):
+        return self.filter(medical_examination_results__result__in=results).filter(*args).filter(**kwargs)
 
     def get_highest_num_of_patient_medical_examinations(self):
         return self.annotate(
