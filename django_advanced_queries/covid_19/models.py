@@ -3,14 +3,17 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django_advanced_queries.covid_19.managers import (
+    HospitalManager,
     DepartmentManager,
     HospitalWorkerManager,
-    PatientManager
+    PatientManager,
+    PersonManager
 )
 
 class Hospital(models.Model):
     name = models.CharField(db_index=True, max_length=255, blank=False, null=False, )
     city = models.CharField(max_length=255, blank=False, null=False, )
+    objects = HospitalManager()
 
     def __repr__(self):
         return '<Hospital {name}>'.format(name=self.name, )
@@ -52,6 +55,7 @@ class Person(models.Model):
         (GENDER_FEMALE, GENDER_FEMALE),
         (GENDER_UNDEFINED, GENDER_UNDEFINED),
     ))
+    objects = PersonManager()
 
     def __repr__(self):
         return '<Person {name} age {age}>'.format(name=self.name, age=self.age)

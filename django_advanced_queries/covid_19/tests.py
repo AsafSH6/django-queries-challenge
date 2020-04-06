@@ -200,7 +200,7 @@ class Covid19Tests(TestCase):
     def test_detect_potential_infected_patients_because_of_sick_hospital_worker(self):
         with self.assertNumQueries(2):
             patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
-                hospital_workers=NotImplementedError
+                hospital_workers=HospitalWorker.objects.get_sick_workers()
             )
             num_of_patient_examined_by_sick_hospital_worker = patient_examined_by_sick_hospital_worker.count()
 
@@ -210,9 +210,9 @@ class Covid19Tests(TestCase):
         # Now improve the test to hit DB once only
         with self.assertNumQueries(1):
             patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
-                hospital_workers=NotImplementedError
+                hospital_workers=HospitalWorker.objects.get_sick_workers()
             )
-            num_of_patient_examined_by_sick_hospital_worker = patient_examined_by_sick_hospital_worker.count()
+            num_of_patient_examined_by_sick_hospital_worker = len(patient_examined_by_sick_hospital_worker)
 
             self.assertEqual(num_of_patient_examined_by_sick_hospital_worker, 1)
             self.assertListEqual(list(patient_examined_by_sick_hospital_worker), [self.patient1])
@@ -220,7 +220,7 @@ class Covid19Tests(TestCase):
     def test_number_of_hospital_workers_that_in_risk_group_of_corona_per_hospital(self):
         # Someone who is in risk group of corona is person that is older than 60
         with self.assertNumQueries(1):
-            result = Hospital.objects.annotate_by_num_of_hospital_workers_in_risk_of_corona().order_by()
+            result = list(Hospital.objects.annotate_by_num_of_hospital_workers_in_risk_of_corona().order_by())
 
             hospital1_num_of_hospital_workers_in_risk_of_corona = result[0].num_of_hospital_workers_in_risk_of_corona
             self.assertEqual(hospital1_num_of_hospital_workers_in_risk_of_corona, 1)
