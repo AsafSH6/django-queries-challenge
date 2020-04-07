@@ -231,8 +231,8 @@ class Covid19Tests(TestCase):
     def test_annotate_by_num_of_dead_from_corona(self):
         # Dead from corona is someone who had corona and then died
         with self.assertNumQueries(1):
-            result = Hospital.objects.\
-                annotate_by_num_of_dead_from_corona().order_by()
+            result = list(Hospital.objects.\
+                annotate_by_num_of_dead_from_corona().order_by())
 
             hospital1_num_of_dead_from_corona = result[0].num_of_dead_from_corona
             self.assertEqual(hospital1_num_of_dead_from_corona, 0)
@@ -244,7 +244,8 @@ class Covid19Tests(TestCase):
         # Dead from corona is someone who had corona and then died
         with self.assertNumQueries(1):
             # Define query by yourself
-            hospitals_with_more_than_two_dead_patients_from_corona = None
+            hospitals_with_more_than_two_dead_patients_from_corona = \
+                Hospital.objects.get_hospitals_with_min_amount_of_dead_from_corona(2)
 
             self.assertListEqual(list(hospitals_with_more_than_two_dead_patients_from_corona),
                                  [self.hospital2])

@@ -1,4 +1,4 @@
-from django.db.models import Manager, IntegerField, Max, Count, Avg, F, Case, When
+from django.db.models import Manager, IntegerField, Max, Count, Avg, F, Case, When, OuterRef, Sum, Subquery
 
 
 class HospitalManager(Manager):
@@ -12,6 +12,28 @@ class HospitalManager(Manager):
                 distinct=True
             )
         )
+    
+    def annotate_by_num_of_dead_from_corona(self):
+        from django_advanced_queries.covid_19.models import Patient
+        patients = Patient.objects.filter_by_examination_results(
+                ['Corona', 'Dead'],
+                department__hospital=OuterRef('pk')
+            ).distinct()
+
+        return self.annotate(
+            num_of_dead_from_corona=Sum(
+                Case(
+                    When(
+                        departments__patients_details__id__in=Subquery(patients.values_list('id')),
+                        then=1
+                    ),
+                    output_field=IntegerField(),
+                    default=0)
+                )
+            )
+
+    def get_hospitals_with_min_amount_of_dead_from_corona(self, min_dead):
+        return self.annotate_by_num_of_dead_from_corona().filter(num_of_dead_from_corona__gte=min_dead)
 
 
 class DepartmentManager(Manager):
@@ -36,14 +58,18 @@ class HospitalWorkerManager(Manager):
 
 class PatientManager(Manager):
     def filter_by_examination_results(self, results, *args, **kwargs):
-        return self.filter(medical_examination_results__result__in=results).filter(*args).filter(**kwargs)
+        qs = self.filter(medical_examination_results__result=results[0])
+        for r in results[1:]:
+            qs = qs.filter(medical_examination_results__result=r)
+        
+        return qs.filter(*args, **kwargs)
 
     def get_highest_num_of_patient_medical_examinations(self):
         return self.annotate(
-            num_of_patient_medical_examinations=Count('medical_examination_results')
-            ).aggregate(
-                highest_num_of_patient_medical_examinations=Max('num_of_patient_medical_examinations')
-            )['highest_num_of_patient_medical_examinations']
+                num_of_patient_medical_examinations=Count('medical_examination_results')
+                ).aggregate(
+                    highest_num_of_patient_medical_examinations=Max('num_of_patient_medical_examinations')
+                )['highest_num_of_patient_medical_examinations']
 
     def filter_by_examined_hospital_workers(self, hospital_workers):
         return self.filter(
