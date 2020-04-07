@@ -95,6 +95,25 @@ class Covid19Tests(TestCase):
             result='Healthy'
         )
 
+        department2 = Department.objects.create(name='Emergency', hospital=self.hospital1)
+        self.hospital_worker4 = HospitalWorker.objects.create(
+            person=person1,
+            department=department2,
+            position='Doctor',
+        )
+        self.hospital_worker5 = HospitalWorker.objects.create(
+            person=person2,
+            department=department2,
+            position='Nurse',
+        )
+        
+        department3 = Department.objects.create(name='Cardiology', hospital=self.hospital1)
+        self.hospital_worker6 = HospitalWorker.objects.create(
+            person=person1,
+            department=department3,
+            position='Nurse',
+        )
+
         ####################################
         ###          Hadassah            ###
         ####################################
@@ -212,6 +231,8 @@ class Covid19Tests(TestCase):
             patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
                 hospital_workers=HospitalWorker.objects.get_sick_workers()
             )
+            # Using `count()` will access the DB again to run the qeury (`COUNT(*)`). Since we already have the data from the
+            # previous line and we don't want to query the DB again, we will use `len()` on the resulting `QuerySet`.
             num_of_patient_examined_by_sick_hospital_worker = len(patient_examined_by_sick_hospital_worker)
 
             self.assertEqual(num_of_patient_examined_by_sick_hospital_worker, 1)
@@ -231,6 +252,7 @@ class Covid19Tests(TestCase):
     def test_annotate_by_num_of_dead_from_corona(self):
         # Dead from corona is someone who had corona and then died
         with self.assertNumQueries(1):
+            # Using `list` to force the query to evaluate only once (insted of every access to the annotated field)
             result = list(Hospital.objects.\
                 annotate_by_num_of_dead_from_corona().order_by())
 
@@ -253,4 +275,17 @@ class Covid19Tests(TestCase):
     def test_define_new_test_and_send_to_me(self):
         # Define test that use at least one function that was not used in the previous tests and send to me
         # Include the solution
-        self.fail()
+        # To dear Asaf sharmit: this is psuedo, not sure how it should look like yet.
+        with self.assertNumQueries(3):
+            hospitals = Hospital.objects.workers_with_multiple_jobs()
+            self.assertListEqual(list(hospitals[0]), [self.hospital_worker1, self.hospital_worker4, self.hospital_worker6,
+                                                      self.hospital_worker2, self.hospital_worker5])
+            self.assertListEqual(list(hospitals[1]), [])
+            
+            hospitals = Hospital.objects.workers_with_multiple_jobs(['Nurse'])
+            self.assertListEqual(list(hospitals[0]), [self.hospital_worker2, self.hospital_worker5])
+            self.assertListEqual(list(hospitals[1]), [])
+
+            Hospital.objects.workers_with_multiple_jobs(['Doctor', 'Nurse'])
+            self.assertListEqual(list(hospitals[0]), [self.hospital_worker1, self.hospital_worker4, self.hospital_worker6])
+            self.assertListEqual(list(hospitals[1]), [])
