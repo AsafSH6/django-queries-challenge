@@ -12,19 +12,11 @@ class HospitalManager(Manager):
                 distinct=True
             )
         )
-
-    def get_patients_that_died_from_a_reason(self, reason):
-        from django_advanced_queries.covid_19.models import Patient, MedicalExaminationResult
-        med_exams_res = MedicalExaminationResult.objects.filter(patient=OuterRef('pk')).order_by('-time').values('result')
-
-        return Patient.objects.filter(department__hospital=OuterRef('pk')).annotate(
-            last_exam_res=Subquery(med_exams_res[0:])
-        ).filter(last_exam_res='Dead').annotate(
-            death_reason=Subquery(med_exams_res[1:])
-        ).filter(death_reason=reason)
     
     def annotate_by_num_of_dead_from_corona(self):
-        patients = self.get_patients_that_died_from_a_reason('Corona')
+        from django_advanced_queries.covid_19.models import Patient
+        patients = Patient.objects.get_patients_that_died_from_a_reason(reason='Corona')
+
         return self.annotate(
             num_of_dead_from_corona=Sum(
                 Case(
@@ -54,7 +46,8 @@ class HospitalWorkerManager(Manager):
 
     def get_sick_workers(self):
         from django_advanced_queries.covid_19.models import Person
-        return self.filter(person__in=Person.objects.get_sick_persons())
+        sick_persons = Person.objects.get_sick_persons()
+        return self.filter(person__in=sick_persons)
 
 
 class PatientManager(Manager):
@@ -73,12 +66,28 @@ class PatientManager(Manager):
             medical_examination_results__examined_by__in=hospital_workers
         ).distinct()
 
+    def get_patients_that_died_from_a_reason(self, reason):
+        from django_advanced_queries.covid_19.models import MedicalExaminationResult
+        med_exams_res = MedicalExaminationResult.objects.filter(patient=OuterRef('pk')).order_by('-time').values('result')
+
+        return self.filter(department__hospital=OuterRef('pk')).annotate(
+            last_exam_res=Subquery(med_exams_res),
+            death_reason=Subquery(med_exams_res[1:])
+        ).filter(
+            last_exam_res='Dead',
+            death_reason=reason
+        )
+
 class PersonManager(Manager):
     def get_sick_persons(self):
         from django_advanced_queries.covid_19.models import MedicalExaminationResult
-        sub = MedicalExaminationResult.objects.filter(patient__person=OuterRef('pk')).order_by('-time').values('result')
+        sub = MedicalExaminationResult.objects.filter(
+            patient__person=OuterRef('pk')
+        ).order_by('-time').values('result')
 
-        return self.annotate(
+        return self.filter(
+            patients_details__isnull=False
+        ).annotate(
             latest_exam_res=Subquery(sub)
         ).exclude(
             latest_exam_res__in=['Healthy', 'Dead']
