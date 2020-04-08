@@ -12,19 +12,24 @@ class HospitalManager(Manager):
                 distinct=True
             )
         )
+
+    def get_patients_that_died_from_a_reason(self, reason):
+        from django_advanced_queries.covid_19.models import Patient, MedicalExaminationResult
+        med_exams_res = MedicalExaminationResult.objects.filter(patient=OuterRef('pk')).order_by('-time').values('result')
+
+        return Patient.objects.filter(department__hospital=OuterRef('pk')).annotate(
+            last_exam_res=Subquery(med_exams_res[0:])
+        ).filter(last_exam_res='Dead').annotate(
+            death_reason=Subquery(med_exams_res[1:])
+        ).filter(death_reason=reason)
     
     def annotate_by_num_of_dead_from_corona(self):
-        from django_advanced_queries.covid_19.models import Patient
-        patients = Patient.objects.filter_by_examination_results(
-                ['Corona', 'Dead'],
-                department__hospital=OuterRef('pk')
-            ).distinct()
-
+        patients = self.get_patients_that_died_from_a_reason('Corona')
         return self.annotate(
             num_of_dead_from_corona=Sum(
                 Case(
                     When(
-                        departments__patients_details__id__in=Subquery(patients.values_list('id')),
+                        departments__patients_details__in=Subquery(patients.values('id')),
                         then=1
                     ),
                     output_field=IntegerField(),
@@ -48,21 +53,13 @@ class HospitalWorkerManager(Manager):
         ).order_by('-num_pref_exams').first()
 
     def get_sick_workers(self):
-        return self.annotate(
-            latest_exam=Max('person__patients_details__medical_examination_results__time')
-        ).filter(
-            person__patients_details__medical_examination_results__time=F('latest_exam'),
-            person__patients_details__medical_examination_results__result__in=['Corona', 'Botism']
-        )
+        from django_advanced_queries.covid_19.models import Person
+        return self.filter(person__in=Person.objects.get_sick_persons())
 
 
 class PatientManager(Manager):
     def filter_by_examination_results(self, results, *args, **kwargs):
-        qs = self.filter(medical_examination_results__result=results[0])
-        for r in results[1:]:
-            qs = qs.filter(medical_examination_results__result=r)
-        
-        return qs.filter(*args, **kwargs)
+        return self.filter(medical_examination_results__result__in=results, *args, **kwargs)
 
     def get_highest_num_of_patient_medical_examinations(self):
         return self.annotate(
@@ -73,14 +70,16 @@ class PatientManager(Manager):
 
     def filter_by_examined_hospital_workers(self, hospital_workers):
         return self.filter(
-            medical_examination_results__time__in=hospital_workers.values_list('medical_examination_results__time')
+            medical_examination_results__examined_by__in=hospital_workers
         ).distinct()
 
 class PersonManager(Manager):
     def get_sick_persons(self):
+        from django_advanced_queries.covid_19.models import MedicalExaminationResult
+        sub = MedicalExaminationResult.objects.filter(patient__person=OuterRef('pk')).order_by('-time').values('result')
+
         return self.annotate(
-            latest_exam=Max('patients_details__medical_examination_results__time')
-        ).filter(
-            patients_details__medical_examination_results__time=F('latest_exam'),
-            patients_details__medical_examination_results__result__in=['Corona', 'Botism']
+            latest_exam_res=Subquery(sub)
+        ).exclude(
+            latest_exam_res__in=['Healthy', 'Dead']
         )
