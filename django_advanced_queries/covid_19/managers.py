@@ -70,9 +70,9 @@ class PatientManager(Manager):
         from django_advanced_queries.covid_19.models import MedicalExaminationResult
         med_exams_res = MedicalExaminationResult.objects.filter(patient=OuterRef('pk')).order_by('-time').values('result')
 
-        return self.filter(department__hospital=OuterRef('pk')).annotate(
-            last_exam_res=Subquery(med_exams_res),
-            death_reason=Subquery(med_exams_res[1:])
+        return self.annotate(
+            last_exam_res=Subquery(med_exams_res[0:1]),
+            death_reason=Subquery(med_exams_res[1:2])
         ).filter(
             last_exam_res='Dead',
             death_reason=reason
@@ -88,12 +88,18 @@ class PersonManager(Manager):
         return self.filter(
             patients_details__isnull=False
         ).annotate(
-            latest_exam_res=Subquery(sub)
+            latest_exam_res=Subquery(sub[0:1])
         ).exclude(
             latest_exam_res__in=['Healthy', 'Dead']
         )
     
     def persons_with_multiple_jobs(self, jobs=None):
+        """Get all persons who have multiple jobs and in the positions defined by `jobs` and only them (iff relation).
+        If `None`, return all persons that hold more than one job (any).
+
+        Keyword Arguments:
+            jobs {list} -- A list of positions each person must hold (default: {None})
+        """
         from django_advanced_queries.covid_19.models import HospitalWorker
         annotations = {}
         filters = Q()
