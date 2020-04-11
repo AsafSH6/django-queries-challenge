@@ -93,25 +93,25 @@ class PersonManager(Manager):
             latest_exam_res__in=['Healthy', 'Dead']
         )
     
-    def persons_with_multiple_jobs(self, jobs):
+    def persons_with_multiple_jobs(self, jobs=None):
+        from django_advanced_queries.covid_19.models import HospitalWorker
         annotations = {}
         filters = Q()
 
         if jobs:
             annotations['cnt_positions'] = Count('hospital_jobs__position', distinct=True)
             filters &= Q(cnt_positions=len(jobs))
+            operator_ = "gt" if len(jobs) == 1 else "gte"
             for pos in jobs:
-                annotations['cnt_{}'.format(pos)] = Count(
-                    Case(
-                        When(
-                            hospital_jobs__position=pos,
-                            then=1
-                        ),
-                        default=0,
-                        output_field=IntegerField()
-                    )
+                sub =  HospitalWorker.objects.filter(
+                    person=OuterRef('pk'),
+                    position=pos
+                ).values('person').annotate(c=Count('*')).values_list('c')
+                annotations['cnt_{}'.format(pos)] = Subquery(
+                    sub,
+                    output_field=IntegerField()
                 )
-                filters &= Q(**{'cnt_{}__gt'.format(pos): 1})
+                filters &= Q(**{'cnt_{}__{}'.format(pos, operator_): 1})
         else:
             annotations['cnt_positions'] = Count('hospital_jobs__position')
             filters &= Q(cnt_positions__gt=1)
