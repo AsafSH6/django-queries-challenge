@@ -280,7 +280,7 @@ class Covid19Tests(TestCase):
         )
 
         with self.assertNumQueries(4):
-            hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=[])
+            hospital_workers = Person.objects.persons_with_multiple_jobs()
             self.assertListEqual(list(hospital_workers), [self.person1, self.person2])
             
             hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Nurse'])
