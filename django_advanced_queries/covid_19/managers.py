@@ -1,4 +1,4 @@
-from django.db.models import Manager, IntegerField, Max, Count, Avg, F, Case, When, OuterRef, Sum, Subquery
+from django.db.models import Manager, IntegerField, Max, Count, Avg, F, Case, When, OuterRef, Sum, Subquery, Q
 
 
 class HospitalManager(Manager):
@@ -92,3 +92,28 @@ class PersonManager(Manager):
         ).exclude(
             latest_exam_res__in=['Healthy', 'Dead']
         )
+    
+    def persons_with_multiple_jobs(self, jobs):
+        annotations = {}
+        filters = Q()
+
+        if jobs:
+            annotations['cnt_positions'] = Count('hospital_jobs__position', distinct=True)
+            filters &= Q(cnt_positions=len(jobs))
+            for pos in jobs:
+                annotations['cnt_{}'.format(pos)] = Count(
+                    Case(
+                        When(
+                            hospital_jobs__position=pos,
+                            then=1
+                        ),
+                        default=0,
+                        output_field=IntegerField()
+                    )
+                )
+                filters &= Q(**{'cnt_{}__gt'.format(pos): 1})
+        else:
+            annotations['cnt_positions'] = Count('hospital_jobs__position')
+            filters &= Q(cnt_positions__gt=1)
+
+        return self.filter(hospital_jobs__isnull=False).annotate(**annotations).filter(filters)

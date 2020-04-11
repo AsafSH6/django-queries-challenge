@@ -29,12 +29,14 @@ class Covid19Tests(TestCase):
         )
         department1 = Department.objects.create(name='Critical Care', hospital=self.hospital1)
         person1 = Person.objects.create(name='Alon', age=65, gender='Male') # Corona
+        self.person1 = person1
         self.hospital_worker1 = HospitalWorker.objects.create(
             person=person1,
             department=department1,
             position='Doctor',
         )
         person2 = Person.objects.create(name='Ahmed', age=34, gender='Male')
+        self.person2 = person2
         self.hospital_worker2 = HospitalWorker.objects.create(
             person=person2,
             department=department1,
@@ -93,25 +95,6 @@ class Covid19Tests(TestCase):
             examined_by=self.hospital_worker2,
             patient=self.patient4,
             result='Healthy'
-        )
-
-        department2 = Department.objects.create(name='Emergency', hospital=self.hospital1)
-        self.hospital_worker4 = HospitalWorker.objects.create(
-            person=person1,
-            department=department2,
-            position='Doctor',
-        )
-        self.hospital_worker5 = HospitalWorker.objects.create(
-            person=person2,
-            department=department2,
-            position='Nurse',
-        )
-        
-        department3 = Department.objects.create(name='Cardiology', hospital=self.hospital1)
-        self.hospital_worker6 = HospitalWorker.objects.create(
-            person=person1,
-            department=department3,
-            position='Nurse',
         )
 
         ####################################
@@ -276,16 +259,35 @@ class Covid19Tests(TestCase):
         # Define test that use at least one function that was not used in the previous tests and send to me
         # Include the solution
         # To dear Asaf sharmit: this is psuedo, not sure how it should look like yet.
-        with self.assertNumQueries(3):
-            hospitals = Hospital.objects.workers_with_multiple_jobs()
-            self.assertListEqual(list(hospitals[0]), [self.hospital_worker1, self.hospital_worker4, self.hospital_worker6,
-                                                      self.hospital_worker2, self.hospital_worker5])
-            self.assertListEqual(list(hospitals[1]), [])
-            
-            hospitals = Hospital.objects.workers_with_multiple_jobs(['Nurse'])
-            self.assertListEqual(list(hospitals[0]), [self.hospital_worker2, self.hospital_worker5])
-            self.assertListEqual(list(hospitals[1]), [])
 
-            Hospital.objects.workers_with_multiple_jobs(['Doctor', 'Nurse'])
-            self.assertListEqual(list(hospitals[0]), [self.hospital_worker1, self.hospital_worker4, self.hospital_worker6])
-            self.assertListEqual(list(hospitals[1]), [])
+        department2 = Department.objects.create(name='Emergency', hospital=self.hospital1)
+        self.hospital_worker4 = HospitalWorker.objects.create(
+            person=self.person1,
+            department=department2,
+            position='Doctor',
+        )
+        self.hospital_worker5 = HospitalWorker.objects.create(
+            person=self.person2,
+            department=department2,
+            position='Nurse',
+        )
+        
+        department3 = Department.objects.create(name='Cardiology', hospital=self.hospital1)
+        self.hospital_worker6 = HospitalWorker.objects.create(
+            person=self.person1,
+            department=department3,
+            position='Nurse',
+        )
+
+        with self.assertNumQueries(4):
+            hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=[])
+            self.assertListEqual(list(hospital_workers), [self.person1, self.person2])
+            
+            hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Nurse'])
+            self.assertListEqual(list(hospital_workers), [self.person2])
+
+            hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Doctor'])
+            self.assertListEqual(list(hospital_workers), [])
+
+            hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Doctor', 'Nurse'])
+            self.assertListEqual(list(hospital_workers), [self.person1])
