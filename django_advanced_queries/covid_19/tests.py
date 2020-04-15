@@ -105,7 +105,7 @@ class Covid19Tests(TestCase):
         department2 = Department.objects.create(name='Critical Care', hospital=self.hospital2)
         self.person6 = Person.objects.create(name='Ron', age=60, gender='Male')
         self.hospital_worker3 = HospitalWorker.objects.create(
-            person=person6,
+            person=self.person6,
             department=department2,
             position='Doctor',
         )
@@ -160,26 +160,26 @@ class Covid19Tests(TestCase):
 
 
         self.person10 = Person.objects.create(name='Abdul', age=29, gender='Male')
-        self.hospital_worker3 = HospitalWorker.objects.create(
+        self.hospital_worker4 = HospitalWorker.objects.create(
             person=self.person10,
             department=department2,
             position='Nurse',
         )
 
         department3 = Department.objects.create(name='Emergency', hospital=self.hospital2)
-        self.hospital_worker4 = HospitalWorker.objects.create(
+        self.hospital_worker5 = HospitalWorker.objects.create(
             person=self.person6,
             department=department3,
             position='Doctor',
         )
-        self.hospital_worker5 = HospitalWorker.objects.create(
+        self.hospital_worker6 = HospitalWorker.objects.create(
             person=self.person10,
             department=department3,
             position='Nurse',
         )
         
         department4 = Department.objects.create(name='Cardiology', hospital=self.hospital2)
-        self.hospital_worker6 = HospitalWorker.objects.create(
+        self.hospital_worker7 = HospitalWorker.objects.create(
             person=self.person6,
             department=department3,
             position='Nurse',
@@ -203,7 +203,7 @@ class Covid19Tests(TestCase):
 
             actual_result = [department.avg_age_of_patients
                              for department in departments_with_avg_age_of_patients.order_by()]
-            self.assertEqual(actual_result, [36, None, None, 60])
+            self.assertEqual(actual_result, [36, 60, None, None])
 
     def test_doctor_performed_the_most_medical_examinations(self):
         with self.assertNumQueries(1):
@@ -222,7 +222,7 @@ class Covid19Tests(TestCase):
     def test_num_of_sick_hospital_workers(self):
         with self.assertNumQueries(1):
             sick_hospital_workers = HospitalWorker.objects.get_sick_workers()
-            self.assertEqual(sick_hospital_workers.count(), 3)
+            self.assertEqual(sick_hospital_workers.count(), 1)
 
     def test_detect_potential_infected_patients_because_of_sick_hospital_worker(self):
         with self.assertNumQueries(2):
