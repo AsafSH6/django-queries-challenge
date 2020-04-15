@@ -109,6 +109,17 @@ class Covid19Tests(TestCase):
             department=department2,
             position='Doctor',
         )
+        self.hospital_worker4 = HospitalWorker.objects.create(
+            person=self.person6,
+            department=department2,
+            position='Doctor',
+        )
+
+        self.hospital_worker5 = HospitalWorker.objects.create(
+            person=self.person6,
+            department=department2,
+            position='Nurse',
+        )
         person7 = Person.objects.create(name='Shalom', age=87, gender='Male')
         self.patient5 = Patient.objects.create(person=person7, department=department2)
         MedicalExaminationResult.objects.create(
@@ -158,30 +169,16 @@ class Covid19Tests(TestCase):
             result='Botism'
         )
 
-
         self.person10 = Person.objects.create(name='Abdul', age=29, gender='Male')
-        self.hospital_worker4 = HospitalWorker.objects.create(
+        self.hospital_worker6 = HospitalWorker.objects.create(
             person=self.person10,
             department=department2,
             position='Nurse',
         )
 
-        department3 = Department.objects.create(name='Emergency', hospital=self.hospital2)
-        self.hospital_worker5 = HospitalWorker.objects.create(
-            person=self.person6,
-            department=department3,
-            position='Doctor',
-        )
-        self.hospital_worker6 = HospitalWorker.objects.create(
-            person=self.person10,
-            department=department3,
-            position='Nurse',
-        )
-        
-        department4 = Department.objects.create(name='Cardiology', hospital=self.hospital2)
         self.hospital_worker7 = HospitalWorker.objects.create(
-            person=self.person6,
-            department=department3,
+            person=self.person10,
+            department=department2,
             position='Nurse',
         )
 
@@ -203,7 +200,7 @@ class Covid19Tests(TestCase):
 
             actual_result = [department.avg_age_of_patients
                              for department in departments_with_avg_age_of_patients.order_by()]
-            self.assertEqual(actual_result, [36, 60, None, None])
+            self.assertEqual(actual_result, [36, 60])
 
     def test_doctor_performed_the_most_medical_examinations(self):
         with self.assertNumQueries(1):
@@ -276,7 +273,12 @@ class Covid19Tests(TestCase):
             self.assertListEqual(list(hospitals_with_more_than_two_dead_patients_from_corona),
                                  [self.hospital2])
 
-    def test_get_persons_with_spesific_multiple_jobs(self):
+    def test_get_persons_with_specific_multiple_jobs(self):
+        """Author: Arthur
+        persons_with_multiple_jobs:
+            Get all persons who have multiple jobs and in the positions defined by `jobs` and only them (iff relation).
+            If `None`, return all persons that hold more than one job (any).
+        """
         # Note: `Count(Case(When(...)))`` won't work here
         with self.assertNumQueries(4):
             hospital_workers = Person.objects.persons_with_multiple_jobs()
