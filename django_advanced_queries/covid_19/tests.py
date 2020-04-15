@@ -95,6 +95,25 @@ class Covid19Tests(TestCase):
             result='Healthy'
         )
 
+        department2 = Department.objects.create(name='Emergency', hospital=self.hospital1)
+        self.hospital_worker4 = HospitalWorker.objects.create(
+            person=self.person1,
+            department=department2,
+            position='Doctor',
+        )
+        self.hospital_worker5 = HospitalWorker.objects.create(
+            person=self.person2,
+            department=department2,
+            position='Nurse',
+        )
+        
+        department3 = Department.objects.create(name='Cardiology', hospital=self.hospital1)
+        self.hospital_worker6 = HospitalWorker.objects.create(
+            person=self.person1,
+            department=department3,
+            position='Nurse',
+        )
+
         ####################################
         ###          Hadassah            ###
         ####################################
@@ -176,7 +195,7 @@ class Covid19Tests(TestCase):
 
             actual_result = [department.avg_age_of_patients
                              for department in departments_with_avg_age_of_patients.order_by()]
-            self.assertEqual(actual_result, [36, 60])
+            self.assertEqual(actual_result, [36, None, None, 60])
 
     def test_doctor_performed_the_most_medical_examinations(self):
         with self.assertNumQueries(1):
@@ -195,7 +214,7 @@ class Covid19Tests(TestCase):
     def test_num_of_sick_hospital_workers(self):
         with self.assertNumQueries(1):
             sick_hospital_workers = HospitalWorker.objects.get_sick_workers()
-            self.assertEqual(sick_hospital_workers.count(), 1)
+            self.assertEqual(sick_hospital_workers.count(), 3)
 
     def test_detect_potential_infected_patients_because_of_sick_hospital_worker(self):
         with self.assertNumQueries(2):
@@ -248,6 +267,21 @@ class Covid19Tests(TestCase):
 
             self.assertListEqual(list(hospitals_with_more_than_two_dead_patients_from_corona),
                                  [self.hospital2])
+
+    def test_get_persons_with_spesific_multiple_jobs(self):
+        # Note: `Count(Case(When(...)))`` won't work here
+        with self.assertNumQueries(4):
+            hospital_workers = Person.objects.persons_with_multiple_jobs()
+            self.assertListEqual(list(hospital_workers), [self.person1, self.person2])
+            
+            hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Nurse'])
+            self.assertListEqual(list(hospital_workers), [self.person2])
+
+            hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Doctor'])
+            self.assertListEqual(list(hospital_workers), [])
+
+            hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Doctor', 'Nurse'])
+            self.assertListEqual(list(hospital_workers), [self.person1])
 
     def test_define_new_test_and_send_to_me(self):
         # Define test that use at least one function that was not used in the previous tests and send to me
