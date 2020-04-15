@@ -20,7 +20,8 @@ Sources of information:
 
 ---   
 ## Notes
-* Avoid searching the internet and use the sources    
+* Avoid searching the internet and use the sources
+* Some tests may require a change of the test result itself in order to meet the requirement for a specific number of queries
 * After you successfully finish the challenge create new test that requires function which was not used in any of the previous tests and send to me
 * If you are having troubbles feel free contact me for questions
 * You can ask for hints  

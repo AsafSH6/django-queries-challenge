@@ -168,6 +168,32 @@ class Covid19Tests(TestCase):
             patient=self.patient7,
             result='Botism'
         )
+        person10 = Person.objects.create(name='Ruby', age=15, gender='Male')
+        self.patient8 = Patient.objects.create(person=person10, department=department2)
+        MedicalExaminationResult.objects.create(
+            time=datetime.datetime(year=2020, month=4, day=26, hour=16, minute=10),
+            examined_by=self.hospital_worker3,
+            patient=self.patient8,
+            result='Corona'
+        )
+        MedicalExaminationResult.objects.create(
+            time=datetime.datetime(year=2020, month=4, day=27, hour=22, minute=12),
+            examined_by=self.hospital_worker3,
+            patient=self.patient8,
+            result='Healthy'
+        )
+        MedicalExaminationResult.objects.create(
+            time=datetime.datetime(year=2020, month=4, day=28, hour=11, minute=01),
+            examined_by=self.hospital_worker3,
+            patient=self.patient8,
+            result='Botism'
+        )
+        MedicalExaminationResult.objects.create(
+            time=datetime.datetime(year=2020, month=4, day=28, hour=11, minute=10),
+            examined_by=self.hospital_worker3,
+            patient=self.patient8,
+            result='Dead'
+        )
 
         self.person10 = Person.objects.create(name='Abdul', age=29, gender='Male')
         self.hospital_worker6 = HospitalWorker.objects.create(
@@ -184,15 +210,22 @@ class Covid19Tests(TestCase):
 
     def test_num_of_hospitalized_because_of_botism(self):
         with self.assertNumQueries(1):
-            num_of_hospitalized_because_of_botism = Patient.objects.filter_by_examination_results(
-                results=['Botism']
+            num_of_hospitalized_because_of_botism = Patient.objects.filter_by_examinations_results_options(
+                results=('Botism', )
             ).count()
-            self.assertEqual(num_of_hospitalized_because_of_botism, 2)
+            self.assertEqual(num_of_hospitalized_because_of_botism, 3)
+
+    def test_num_of_hospitalized_because_of_botism_or_corona(self):
+        with self.assertNumQueries(1):
+            num_of_hospitalized_because_of_botism_or_corona = Patient.objects.filter_by_examinations_results_options(
+                results=('Botism', 'Corona')
+            ).count()
+            self.assertEqual(num_of_hospitalized_because_of_botism_or_corona, 7)
 
     def test_highest_num_of_patient_medical_examinations(self):
         with self.assertNumQueries(1):
             highest_num_of_patient_m_e = Patient.objects.get_highest_num_of_patient_medical_examinations()
-            self.assertEqual(highest_num_of_patient_m_e, 3)
+            self.assertEqual(highest_num_of_patient_m_e, 4)
 
     def test_average_age_of_patients_in_every_department(self):
         with self.assertNumQueries(1):
@@ -200,7 +233,7 @@ class Covid19Tests(TestCase):
 
             actual_result = [department.avg_age_of_patients
                              for department in departments_with_avg_age_of_patients.order_by()]
-            self.assertEqual(actual_result, [36, 60])
+            self.assertEqual(actual_result, [36, 48.75])
 
     def test_doctor_performed_the_most_medical_examinations(self):
         with self.assertNumQueries(1):
