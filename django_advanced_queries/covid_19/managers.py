@@ -61,9 +61,9 @@ class PatientManager(Manager):
                     highest_num_of_patient_medical_examinations=Max('num_of_patient_medical_examinations')
                 )['highest_num_of_patient_medical_examinations']
 
-    def filter_by_examined_hospital_workers(self, hospital_workers):
+    def filter_by_examined_hospital_workers(self, hospital_workers, *args, **kwargs):
         return self.filter(
-            medical_examination_results__examined_by__in=hospital_workers
+            medical_examination_results__examined_by__in=hospital_workers, *args, **kwargs
         ).distinct()
 
     def get_patients_that_died_from_a_reason(self, reason):
@@ -71,7 +71,7 @@ class PatientManager(Manager):
         med_exams_res = MedicalExaminationResult.objects.filter(patient=OuterRef('pk')).order_by('-time').values('result')
 
         return self.annotate(
-            last_exam_res=Subquery(med_exams_res[0:1]),
+            last_exam_res=Subquery(med_exams_res[:1]),
             death_reason=Subquery(med_exams_res[1:2])
         ).filter(
             last_exam_res='Dead',
