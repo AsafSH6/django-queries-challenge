@@ -157,13 +157,46 @@ class Covid19Tests(TestCase):
             patient=self.patient7,
             result='Botism'
         )
+        person10 = Person.objects.create(name='Ruby', age=15, gender='Male')
+        self.patient8 = Patient.objects.create(person=person10, department=department2)
+        MedicalExaminationResult.objects.create(
+            time=datetime.datetime(year=2020, month=4, day=26, hour=16, minute=10),
+            examined_by=self.hospital_worker3,
+            patient=self.patient8,
+            result='Corona'
+        )
+        MedicalExaminationResult.objects.create(
+            time=datetime.datetime(year=2020, month=4, day=27, hour=22, minute=12),
+            examined_by=self.hospital_worker3,
+            patient=self.patient8,
+            result='Healthy'
+        )
+        MedicalExaminationResult.objects.create(
+            time=datetime.datetime(year=2020, month=4, day=28, hour=11, minute=01),
+            examined_by=self.hospital_worker3,
+            patient=self.patient8,
+            result='Botism'
+        )
+        MedicalExaminationResult.objects.create(
+            time=datetime.datetime(year=2020, month=4, day=28, hour=11, minute=10),
+            examined_by=self.hospital_worker3,
+            patient=self.patient8,
+            result='Dead'
+        )
 
     def test_num_of_hospitalized_because_of_botism(self):
         with self.assertNumQueries(1):
-            num_of_hospitalized_because_of_botism = Patient.objects.filter_by_examination_results(
-                results=['Botism']
+            num_of_hospitalized_because_of_botism = Patient.objects.filter_by_examinations_results_options(
+                results=('Botism', )
             ).count()
             self.assertEqual(num_of_hospitalized_because_of_botism, 2)
+
+    def test_num_of_hospitalized_because_of_botism_or_corona(self):
+        with self.assertNumQueries(1):
+            num_of_hospitalized_because_of_botism_or_corona = Patient.objects.filter_by_examinations_results_options(
+                results=('Botism', 'Corona')
+            ).count()
+            self.assertEqual(num_of_hospitalized_because_of_botism_or_corona, 6)
 
     def test_highest_num_of_patient_medical_examinations(self):
         with self.assertNumQueries(1):
@@ -230,7 +263,7 @@ class Covid19Tests(TestCase):
 
     def test_annotate_by_num_of_dead_from_corona(self):
         # Dead from corona is someone who had corona and then died
-        with self.assertNumQueries(1):
+        with self.assertNumQueries(2):
             result = Hospital.objects.\
                 annotate_by_num_of_dead_from_corona().order_by()
 
