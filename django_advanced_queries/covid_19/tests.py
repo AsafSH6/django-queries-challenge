@@ -103,7 +103,7 @@ class Covid19Tests(TestCase):
             city='Jerusalem',
         )
         department2 = Department.objects.create(name='Critical Care', hospital=self.hospital2)
-        person6 = Person.objects.create(name='Ron', age=60, gender='Male')
+        self.person6 = Person.objects.create(name='Ron', age=60, gender='Male')
         self.hospital_worker3 = HospitalWorker.objects.create(
             person=person6,
             department=department2,
@@ -158,21 +158,29 @@ class Covid19Tests(TestCase):
             result='Botism'
         )
 
-        department2 = Department.objects.create(name='Emergency', hospital=self.hospital2)
-        self.hospital_worker4 = HospitalWorker.objects.create(
-            person=person1,
-            department=department2,
-            position='Doctor',
-        )
-        self.hospital_worker5 = HospitalWorker.objects.create(
-            person=person2,
+
+        self.person10 = Person.objects.create(name='Abdul', age=29, gender='Male')
+        self.hospital_worker3 = HospitalWorker.objects.create(
+            person=self.person10,
             department=department2,
             position='Nurse',
         )
+
+        department3 = Department.objects.create(name='Emergency', hospital=self.hospital2)
+        self.hospital_worker4 = HospitalWorker.objects.create(
+            person=self.person6,
+            department=department3,
+            position='Doctor',
+        )
+        self.hospital_worker5 = HospitalWorker.objects.create(
+            person=self.person10,
+            department=department3,
+            position='Nurse',
+        )
         
-        department3 = Department.objects.create(name='Cardiology', hospital=self.hospital2)
+        department4 = Department.objects.create(name='Cardiology', hospital=self.hospital2)
         self.hospital_worker6 = HospitalWorker.objects.create(
-            person=person1,
+            person=self.person6,
             department=department3,
             position='Nurse',
         )
@@ -272,16 +280,16 @@ class Covid19Tests(TestCase):
         # Note: `Count(Case(When(...)))`` won't work here
         with self.assertNumQueries(4):
             hospital_workers = Person.objects.persons_with_multiple_jobs()
-            self.assertListEqual(list(hospital_workers), [self.person1, self.person2])
+            self.assertListEqual(list(hospital_workers), [self.person6, self.person10])
             
             hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Nurse'])
-            self.assertListEqual(list(hospital_workers), [self.person2])
+            self.assertListEqual(list(hospital_workers), [self.person10])
 
             hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Doctor'])
             self.assertListEqual(list(hospital_workers), [])
 
             hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Doctor', 'Nurse'])
-            self.assertListEqual(list(hospital_workers), [self.person1])
+            self.assertListEqual(list(hospital_workers), [self.person6])
 
     def test_define_new_test_and_send_to_me(self):
         # Define test that use at least one function that was not used in the previous tests and send to me
