@@ -189,19 +189,19 @@ class Covid19Tests(TestCase):
             num_of_hospitalized_because_of_botism = Patient.objects.filter_by_examinations_results_options(
                 results=('Botism', )
             ).count()
-            self.assertEqual(num_of_hospitalized_because_of_botism, 2)
+            self.assertEqual(num_of_hospitalized_because_of_botism, 3)
 
     def test_num_of_hospitalized_because_of_botism_or_corona(self):
         with self.assertNumQueries(1):
             num_of_hospitalized_because_of_botism_or_corona = Patient.objects.filter_by_examinations_results_options(
                 results=('Botism', 'Corona')
             ).count()
-            self.assertEqual(num_of_hospitalized_because_of_botism_or_corona, 6)
+            self.assertEqual(num_of_hospitalized_because_of_botism_or_corona, 7)
 
     def test_highest_num_of_patient_medical_examinations(self):
         with self.assertNumQueries(1):
             highest_num_of_patient_m_e = Patient.objects.get_highest_num_of_patient_medical_examinations()
-            self.assertEqual(highest_num_of_patient_m_e, 3)
+            self.assertEqual(highest_num_of_patient_m_e, 4)
 
     def test_average_age_of_patients_in_every_department(self):
         with self.assertNumQueries(1):
@@ -209,7 +209,7 @@ class Covid19Tests(TestCase):
 
             actual_result = [department.avg_age_of_patients
                              for department in departments_with_avg_age_of_patients.order_by()]
-            self.assertEqual(actual_result, [36, 60])
+            self.assertEqual(actual_result, [36, 48.75])
 
     def test_doctor_performed_the_most_medical_examinations(self):
         with self.assertNumQueries(1):
@@ -263,7 +263,7 @@ class Covid19Tests(TestCase):
 
     def test_annotate_by_num_of_dead_from_corona(self):
         # Dead from corona is someone who had corona and then died
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(1):
             result = Hospital.objects.\
                 annotate_by_num_of_dead_from_corona().order_by()
 
