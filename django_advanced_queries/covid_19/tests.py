@@ -95,25 +95,6 @@ class Covid19Tests(TestCase):
             result='Healthy'
         )
 
-        department2 = Department.objects.create(name='Emergency', hospital=self.hospital1)
-        self.hospital_worker4 = HospitalWorker.objects.create(
-            person=self.person1,
-            department=department2,
-            position='Doctor',
-        )
-        self.hospital_worker5 = HospitalWorker.objects.create(
-            person=self.person2,
-            department=department2,
-            position='Nurse',
-        )
-        
-        department3 = Department.objects.create(name='Cardiology', hospital=self.hospital1)
-        self.hospital_worker6 = HospitalWorker.objects.create(
-            person=self.person1,
-            department=department3,
-            position='Nurse',
-        )
-
         ####################################
         ###          Hadassah            ###
         ####################################
@@ -175,6 +156,25 @@ class Covid19Tests(TestCase):
             examined_by=self.hospital_worker3,
             patient=self.patient7,
             result='Botism'
+        )
+
+        department2 = Department.objects.create(name='Emergency', hospital=self.hospital2)
+        self.hospital_worker4 = HospitalWorker.objects.create(
+            person=person1,
+            department=department2,
+            position='Doctor',
+        )
+        self.hospital_worker5 = HospitalWorker.objects.create(
+            person=person2,
+            department=department2,
+            position='Nurse',
+        )
+        
+        department3 = Department.objects.create(name='Cardiology', hospital=self.hospital2)
+        self.hospital_worker6 = HospitalWorker.objects.create(
+            person=person1,
+            department=department3,
+            position='Nurse',
         )
 
     def test_num_of_hospitalized_because_of_botism(self):
