@@ -1,0 +1,42 @@
+Don't give up!!
+
+
+- test_num_of_hospitalized_because_of_botism:
+   1. Use the relevant related name
+   2. use "__in" operator
+
+
+- test_doctor_performed_the_most_medical_examinations
+   1. Read about order_by
+   2. Use .first() or .last() depends on the order way use chose
+
+- test_average_age_of_patients_in_every_department
+   1. Read about annotate and avg
+
+- test_highest_num_of_patient_medical_examinations
+   1. Read about annotate and aggregate
+   2. Read about Count and Max functions
+
+- test_num_of_sick_hospital_workers
+   1. Read about Subquery
+   2. First filter the relevant medical examination and use the last one of them
+   3. In order to get the last one order by -time and then take the result[:1]
+   4. Filter out hospital workers that their last medical examination is Healthy
+
+
+- test_detect_potential_infected_patients_because_of_sick_hospital_worker
+   1. You can use 'get_sick_workers' in order to get the hospital workers that are sick
+   2. Check the result, maybe it is actually the same patient??
+   *second part:
+   3. The change has nothing to do with the queryset itself but the use of the result
+   4. What's the different between count() and len(...)?
+
+- test_number_of_hospital_workers_that_in_risk_group_of_corona_per_hospital
+   1. The annotation should sum the number of hospital workers that their age is greater than 60
+   2. Read about Sum and Case/When
+   3. The reason the test hits the DB more than once is because of the assertions.
+   4. Evaluate the queryset before the assertion so it will hit the DB once only
+
+- test_hospitals_with_at_least_two_dead_patients_from_corona
+  1. Use the previous query
+  2. you can chain queries
