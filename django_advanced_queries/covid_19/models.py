@@ -3,10 +3,20 @@ from __future__ import unicode_literals
 
 from django.db import models
 
+from django_advanced_queries.covid_19.querysets_solutions import (
+    HospitalManager,
+    PersonManager,
+    HospitalWorkerManager,
+    PatientManager,
+    DepartmentManager
+)
+
 
 class Hospital(models.Model):
     name = models.CharField(db_index=True, max_length=255, blank=False, null=False, )
     city = models.CharField(max_length=255, blank=False, null=False, )
+
+    objects = HospitalManager()
 
     def __repr__(self):
         return '<Hospital {name}>'.format(name=self.name, )
@@ -24,6 +34,8 @@ class Department(models.Model):
         blank=False,
         on_delete=models.CASCADE,
     )
+
+    objects = DepartmentManager()
 
     def __repr__(self):
         return '<Department {department_name} in hospital {hospital}>'.format(
@@ -47,6 +59,8 @@ class Person(models.Model):
         (GENDER_FEMALE, GENDER_FEMALE),
         (GENDER_UNDEFINED, GENDER_UNDEFINED),
     ))
+
+    objects = PersonManager()
 
     def __repr__(self):
         return '<Person {name} age {age}>'.format(name=self.name, age=self.age)
@@ -77,6 +91,8 @@ class HospitalWorker(models.Model):
         (POSITION_NURSE, POSITION_NURSE),
     ))
 
+    objects = HospitalWorkerManager()
+
     def __repr__(self):
         return '<Hospital worker {person}, working in {department} position {position}>'.format(
             person=self.person,
@@ -103,6 +119,8 @@ class Patient(models.Model):
         blank=False,
         on_delete=models.CASCADE,
     )
+
+    objects = PatientManager()
 
     def __repr__(self):
         return '<Patient {person} in {department}>'.format(
