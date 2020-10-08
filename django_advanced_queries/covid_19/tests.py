@@ -27,7 +27,10 @@ class Covid19Tests(TestCase):
             name='Asaf Harofeh Medical Center',
             city='Be\'er Ya\'akov',
         )
-        department1 = Department.objects.create(name='Critical Care', hospital=self.hospital1)
+        department1 = Department.objects.create(
+            name='Critical Care',
+            hospital=self.hospital1
+        )
         person1 = Person.objects.create(name='Alon', age=65, gender='Male')
         self.hospital_worker1 = HospitalWorker.objects.create(
             person=person1,
@@ -41,22 +44,46 @@ class Covid19Tests(TestCase):
             position='Nurse',
         )
         person3 = Person.objects.create(name='Rony', age=33, gender='Female')
-        self.patient1 = Patient.objects.create(person=person3, department=department1)
+        self.patient1 = Patient.objects.create(
+            person=person3,
+            department=department1
+        )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=3, day=21, hour=14, minute=3),
+            time=datetime.datetime(
+                year=2020,
+                month=3,
+                day=21,
+                hour=14,
+                minute=3
+            ),
             examined_by=self.hospital_worker1,
             patient=self.patient1,
             result='Corona'
         )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=3, day=21, hour=14, minute=13),
+            time=datetime.datetime(
+                year=2020,
+                month=3,
+                day=21,
+                hour=14,
+                minute=13
+            ),
             examined_by=self.hospital_worker1,
             patient=self.patient1,
             result='Botism'
         )
-        self.patient2 = Patient.objects.create(person=person1, department=department1)
+        self.patient2 = Patient.objects.create(
+            person=person1,
+            department=department1
+        )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=3, day=21, hour=16, minute=13),
+            time=datetime.datetime(
+                year=2020,
+                month=3,
+                day=21,
+                hour=16,
+                minute=13
+            ),
             examined_by=self.hospital_worker2,
             patient=self.patient2,
             result='Corona'
@@ -67,29 +94,59 @@ class Covid19Tests(TestCase):
             department=department1,
             position='Doctor',
         )
-        self.patient3 = Patient.objects.create(person=person4, department=department1)
+        self.patient3 = Patient.objects.create(
+            person=person4,
+            department=department1
+        )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=3, day=21, hour=17, minute=54),
+            time=datetime.datetime(
+                year=2020,
+                month=3,
+                day=21,
+                hour=17,
+                minute=54
+            ),
             examined_by=self.hospital_worker2,
             patient=self.patient3,
             result='Healthy'
         )
         person5 = Person.objects.create(name='Yoav', age=21, gender='Other')
-        self.patient4 = Patient.objects.create(person=person5, department=department1)
+        self.patient4 = Patient.objects.create(
+            person=person5,
+            department=department1
+        )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=3, day=20, hour=12, minute=13),
+            time=datetime.datetime(
+                year=2020,
+                month=3,
+                day=20,
+                hour=12,
+                minute=13
+            ),
             examined_by=self.hospital_worker2,
             patient=self.patient4,
             result='Corona'
         )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=3, day=26, hour=18, minute=01),
+            time=datetime.datetime(
+                year=2020,
+                month=3,
+                day=26,
+                hour=18,
+                minute=1
+            ),
             examined_by=self.hospital_worker2,
             patient=self.patient4,
             result='Healthy'
         )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=26, hour=18, minute=01),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=26,
+                hour=18,
+                minute=1
+            ),
             examined_by=self.hospital_worker2,
             patient=self.patient4,
             result='Healthy'
@@ -102,7 +159,10 @@ class Covid19Tests(TestCase):
             name='Hadassah',
             city='Jerusalem',
         )
-        department2 = Department.objects.create(name='Critical Care', hospital=self.hospital2)
+        department2 = Department.objects.create(
+            name='Critical Care',
+            hospital=self.hospital2
+        )
         self.person6 = Person.objects.create(name='Ron', age=60, gender='Male')
         self.hospital_worker3 = HospitalWorker.objects.create(
             person=self.person6,
@@ -121,81 +181,167 @@ class Covid19Tests(TestCase):
             position='Nurse',
         )
         person7 = Person.objects.create(name='Shalom', age=87, gender='Male')
-        self.patient5 = Patient.objects.create(person=person7, department=department2)
+        self.patient5 = Patient.objects.create(
+            person=person7,
+            department=department2
+        )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=26, hour=18, minute=01),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=26,
+                hour=18,
+                minute=1
+            ),
             examined_by=self.hospital_worker3,
             patient=self.patient5,
             result='Corona'
         )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=27, hour=18, minute=01),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=27,
+                hour=18,
+                minute=1
+            ),
             examined_by=self.hospital_worker3,
             patient=self.patient5,
             result='Dead'
         )
         person8 = Person.objects.create(name='Lea', age=90, gender='Female')
-        self.patient6 = Patient.objects.create(person=person8, department=department2)
+        self.patient6 = Patient.objects.create(
+            person=person8,
+            department=department2
+        )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=26, hour=18, minute=01),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=26,
+                hour=18,
+                minute=1
+            ),
             examined_by=self.hospital_worker3,
             patient=self.patient6,
             result='Corona'
         )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=27, hour=18, minute=01),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=27,
+                hour=18,
+                minute=1
+            ),
             examined_by=self.hospital_worker3,
             patient=self.patient6,
             result='Corona'
         )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=28, hour=18, minute=01),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=28,
+                hour=18,
+                minute=1
+            ),
             examined_by=self.hospital_worker3,
             patient=self.patient6,
             result='Dead'
         )
         person9 = Person.objects.create(name='Daniel', age=3, gender='Male')
-        self.patient7 = Patient.objects.create(person=person9, department=department2)
+        self.patient7 = Patient.objects.create(
+            person=person9,
+            department=department2
+        )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=26, hour=15, minute=15),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=26,
+                hour=15,
+                minute=15
+            ),
             examined_by=self.hospital_worker3,
             patient=self.patient7,
             result='Healthy'
         )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=27, hour=21, minute=53),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=27,
+                hour=21,
+                minute=53
+            ),
             examined_by=self.hospital_worker3,
             patient=self.patient7,
             result='Botism'
         )
-        self.person10 = Person.objects.create(name='Ruby', age=15, gender='Male')
-        self.patient8 = Patient.objects.create(person=self.person10, department=department2)
+        self.person10 = Person.objects.create(
+            name='Ruby',
+            age=15,
+            gender='Male'
+        )
+        self.patient8 = Patient.objects.create(
+            person=self.person10,
+            department=department2
+        )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=26, hour=16, minute=10),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=26,
+                hour=16,
+                minute=10
+            ),
             examined_by=self.hospital_worker3,
             patient=self.patient8,
             result='Corona'
         )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=27, hour=22, minute=12),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=27,
+                hour=22,
+                minute=12
+            ),
             examined_by=self.hospital_worker3,
             patient=self.patient8,
             result='Healthy'
         )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=28, hour=11, minute=01),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=28,
+                hour=11,
+                minute=1
+            ),
             examined_by=self.hospital_worker3,
             patient=self.patient8,
             result='Botism'
         )
         MedicalExaminationResult.objects.create(
-            time=datetime.datetime(year=2020, month=4, day=28, hour=11, minute=10),
+            time=datetime.datetime(
+                year=2020,
+                month=4,
+                day=28,
+                hour=11,
+                minute=10
+            ),
             examined_by=self.hospital_worker3,
             patient=self.patient8,
             result='Dead'
         )
 
-        self.person11 = Person.objects.create(name='Abdul', age=29, gender='Male')
+        self.person11 = Person.objects.create(
+            name='Abdul',
+            age=29,
+            gender='Male'
+        )
         self.hospital_worker6 = HospitalWorker.objects.create(
             person=self.person11,
             department=department2,
@@ -242,7 +388,10 @@ class Covid19Tests(TestCase):
                 exclude_kwargs={}
             )
 
-            self.assertEqual(doctor_performed_the_most_m_e, self.hospital_worker3)
+            self.assertEqual(
+                doctor_performed_the_most_m_e,
+                self.hospital_worker3
+            )
 
     def test_num_of_sick_persons(self):
         with self.assertNumQueries(1):
@@ -262,7 +411,10 @@ class Covid19Tests(TestCase):
             num_of_patient_examined_by_sick_hospital_worker = patient_examined_by_sick_hospital_worker.count()
 
             self.assertEqual(num_of_patient_examined_by_sick_hospital_worker, 1)
-            self.assertListEqual(list(patient_examined_by_sick_hospital_worker), [self.patient1])
+            self.assertListEqual(
+                list(patient_examined_by_sick_hospital_worker),
+                [self.patient1]
+            )
 
         # Now improve the test to hit DB once only
         with self.assertNumQueries(1):
@@ -272,7 +424,10 @@ class Covid19Tests(TestCase):
             num_of_patient_examined_by_sick_hospital_worker = patient_examined_by_sick_hospital_worker.count()
 
             self.assertEqual(num_of_patient_examined_by_sick_hospital_worker, 1)
-            self.assertListEqual(list(patient_examined_by_sick_hospital_worker), [self.patient1])
+            self.assertListEqual(
+                list(patient_examined_by_sick_hospital_worker),
+                [self.patient1]
+            )
 
     def test_number_of_hospital_workers_that_in_risk_group_of_corona_per_hospital(self):
         # Someone who is in risk group of corona is person that is older than 60
@@ -283,7 +438,10 @@ class Covid19Tests(TestCase):
             self.assertEqual(hospital1_num_of_hospital_workers_in_risk_of_corona, 1)
 
             hospital2_num_of_hospital_workers_in_risk_of_corona = result[1].num_of_hospital_workers_in_risk_of_corona
-            self.assertEqual(hospital2_num_of_hospital_workers_in_risk_of_corona, 1)
+            self.assertEqual(
+                hospital2_num_of_hospital_workers_in_risk_of_corona,
+                1
+            )
 
     def test_annotate_by_num_of_dead_from_corona(self):
         # Dead from corona is someone who had corona and then died
@@ -303,13 +461,16 @@ class Covid19Tests(TestCase):
             # Define query by yourself
             hospitals_with_more_than_two_dead_patients_from_corona = None
 
-            self.assertListEqual(list(hospitals_with_more_than_two_dead_patients_from_corona),
-                                 [self.hospital2])
+            self.assertListEqual(
+                list(hospitals_with_more_than_two_dead_patients_from_corona),
+                [self.hospital2]
+            )
 
     def test_get_persons_with_specific_multiple_jobs(self):
         """Author: Arthur
         persons_with_multiple_jobs:
-            Get all persons who have multiple jobs and in the positions defined by `jobs` and only them (iff relation).
+            Get all persons who have multiple jobs and in the positions defined
+             by `jobs` and only them (iff relation).
             If `None`, return all persons that hold more than one job (any).
         """
         # Note: `Count(Case(When(...)))`` won't work here
