@@ -15,6 +15,7 @@ There are 10 tests that based on covid19 app which define database models and re
 
 Sources of information:
 * https://levelup.gitconnected.com/demystifying-complex-queries-for-django-orm-2297d3bfbd2f
+* https://docs.djangoproject.com/en/1.11/ref/models/querysets/
 * https://docs.djangoproject.com/en/1.11/ref/models/conditional-expressions/
 * https://docs.djangoproject.com/en/1.11/ref/models/expressions/
 
