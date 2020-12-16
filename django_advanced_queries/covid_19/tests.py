@@ -368,6 +368,17 @@ class Covid19Tests(TestCase):
             ).count()
             self.assertEqual(num_of_hospitalized_because_of_botism_or_corona, 7)
 
+    def test_hospital_worker_alon_age_using_single_query(self):
+        with self.assertNumQueries(1):
+            alon = HospitalWorker.objects.select_related('person').get(person__name='Alon')
+            self.assertEqual(alon.person.age, 65)
+
+    def test_count_all_hospital_departments_using_two_queries(self):
+        with self.assertNumQueries(2):
+            hospitals = Hospital.objects.prefetch_related('departments').all()
+            for hospital in hospitals:
+                self.assertEqual(hospital.departments.count(), 1)
+
     def test_highest_num_of_patient_medical_examinations(self):
         with self.assertNumQueries(1):
             highest_num_of_patient_m_e = Patient.objects.get_highest_num_of_patient_medical_examinations()
