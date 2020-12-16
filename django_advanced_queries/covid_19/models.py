@@ -16,7 +16,7 @@ class Hospital(models.Model):
 
 
 class Department(models.Model):
-    name = models.CharField(max_length=255, blank=False, null=False, )
+    name = models.CharField(db_index=True, max_length=255, blank=False, null=False, )
     hospital = models.ForeignKey(
         to=Hospital,
         related_name='departments',
@@ -40,7 +40,7 @@ class Person(models.Model):
     GENDER_FEMALE = 'Female'
     GENDER_UNDEFINED = 'Other'
 
-    name = models.CharField(max_length=255, blank=False, null=False)
+    name = models.CharField(db_index=True, max_length=255, blank=False, null=False)
     age = models.PositiveSmallIntegerField(null=False)
     gender = models.CharField(max_length=6, blank=False, null=False, choices=(
         (GENDER_MALE, GENDER_MALE),
@@ -72,7 +72,7 @@ class HospitalWorker(models.Model):
         null=False,
         on_delete=models.CASCADE,
     )
-    position = models.CharField(db_index=True, max_length=255, blank=False, null=False, choices=(
+    position = models.CharField(max_length=255, blank=False, null=False, choices=(
         (POSITION_DOCTOR, POSITION_DOCTOR),
         (POSITION_NURSE, POSITION_NURSE),
     ))
@@ -135,7 +135,7 @@ class MedicalExaminationResult(models.Model):
         blank=False,
         on_delete=models.CASCADE,
     )
-    result = models.CharField(db_index=True, max_length=255, blank=False, null=False, choices=(
+    result = models.CharField(max_length=255, blank=False, null=False, choices=(
         (RESULT_HEALTHY, RESULT_HEALTHY),
         (RESULT_CORONA, RESULT_CORONA),
         (RESULT_BOT, RESULT_BOT),
