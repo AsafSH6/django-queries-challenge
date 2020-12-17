@@ -2,9 +2,10 @@
 from __future__ import unicode_literals
 
 import datetime
+from decimal import Decimal
 
 from django.db.models import Count, Max, Avg, OuterRef, Subquery, Sum, Case, \
-    When, IntegerField, Q, F
+    When, IntegerField, Q, F, DecimalField, FloatField, Value
 from django.test import TestCase
 
 from django_advanced_queries.covid_19.models import (
@@ -545,7 +546,8 @@ class Covid19Tests(TestCase):
                         departments__patients_details__in=Subquery(
                             patient_died_from_corona.values('pk'))),
                         then=F('departments__patients_details__person'))),
-                        distinct=True)).filter(num_of_dead_from_corona__gte=2).order_by())
+                        distinct=True)).filter(
+                    num_of_dead_from_corona__gte=2).order_by())
 
             self.assertListEqual(
                 list(hospitals_with_more_than_two_dead_patients_from_corona),
@@ -579,7 +581,21 @@ class Covid19Tests(TestCase):
                 jobs=['Doctor', 'Nurse'])
             self.assertListEqual(list(hospital_workers), [self.person6])
 
-    # def test_define_new_test_and_send_to_me(self):
-    #     # Define test that use at least one function that was not used in the previous tests and send to me
-    #     # Include the solution
-    #     self.fail()
+    def test_get_ratio_between_doctors_and_nurses_per_hospital(self):
+        # Define test that use at least one function that was not used in the previous tests and send to me
+        # Include the solution
+        with self.assertNumQueries(1):
+            def count_position(position):
+                return Sum(Case(When(
+                    departments__hospital_workers__position=position,
+                    then=1)), output_field=FloatField())
+
+            result = list(Hospital.objects.annotate(
+                count_doctors=count_position(HospitalWorker.POSITION_DOCTOR),
+                count_nurses=count_position(
+                    HospitalWorker.POSITION_NURSE)).annotate(
+                doctor_nurse_ratio=F('count_doctors') * Decimal('1.0') / F(
+                    'count_nurses')).order_by())
+
+            self.assertEqual(result[0].doctor_nurse_ratio, 2)
+            self.assertEqual(result[1].doctor_nurse_ratio, 2 / 3.0)
