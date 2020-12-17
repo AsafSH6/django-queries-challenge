@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 import datetime
 
 from django.db.models import Count, Max, Avg, OuterRef, Subquery, Sum, Case, \
-    When, IntegerField, Q
+    When, IntegerField, Q, F
 from django.test import TestCase
 
 from django_advanced_queries.covid_19.models import (
@@ -33,6 +33,7 @@ class Covid19Tests(TestCase):
             name='Critical Care',
             hospital=self.hospital1
         )
+
         person1 = Person.objects.create(name='Alon', age=65, gender='Male')
         self.hospital_worker1 = HospitalWorker.objects.create(
             person=person1,
@@ -358,18 +359,16 @@ class Covid19Tests(TestCase):
 
     def test_num_of_hospitalized_because_of_botism(self):
         with self.assertNumQueries(1):
-            num_of_hospitalized_because_of_botism = Patient.objects.filter(
-                medical_examination_results__result=MedicalExaminationResult.RESULT_BOT
+            num_of_hospitalized_because_of_botism = Patient.objects.filter_by_examinations_results_options(
+                results=('Botism',)
             ).count()
             self.assertEqual(num_of_hospitalized_because_of_botism, 3)
 
     def test_num_of_hospitalized_because_of_botism_or_corona(self):
         with self.assertNumQueries(1):
-            num_of_hospitalized_because_of_botism_or_corona = Patient.objects.filter(
-                medical_examination_results__result__in=[
-                    MedicalExaminationResult.RESULT_BOT,
-                    MedicalExaminationResult.RESULT_CORONA]
-            ).distinct().count()
+            num_of_hospitalized_because_of_botism_or_corona = Patient.objects.filter_by_examinations_results_options(
+                results=('Botism', 'Corona')
+            ).count()
 
             self.assertEqual(num_of_hospitalized_because_of_botism_or_corona, 7)
 
@@ -388,11 +387,7 @@ class Covid19Tests(TestCase):
 
     def test_highest_num_of_patient_medical_examinations(self):
         with self.assertNumQueries(1):
-            highest_num_of_patient_m_e = Patient.objects.annotate(results=
-            Count(
-                'medical_examination_results')).aggregate(
-                max_results=
-                Max('results'))['max_results']
+            highest_num_of_patient_m_e = Patient.objects.get_highest_num_of_patient_medical_examinations()
             self.assertEqual(highest_num_of_patient_m_e, 4)
 
     def test_average_age_of_patients_in_every_department(self):
@@ -407,11 +402,11 @@ class Covid19Tests(TestCase):
 
     def test_doctor_performed_the_most_medical_examinations(self):
         with self.assertNumQueries(1):
-            doctor_performed_the_most_m_e = HospitalWorker.objects.filter(
-                position='Doctor'
-            ).annotate(examination_count=Count(
-                'medical_examination_results')).order_by(
-                '-examination_count').first()
+            doctor_performed_the_most_m_e = HospitalWorker.objects. \
+                get_worker_performed_most_medical_examinations(
+                filter_kwargs={'position': 'Doctor'},
+                exclude_kwargs={}
+            )
 
             self.assertEqual(
                 doctor_performed_the_most_m_e,
@@ -420,27 +415,14 @@ class Covid19Tests(TestCase):
 
     def test_num_of_sick_persons(self):
         with self.assertNumQueries(1):
-            results_subquery = MedicalExaminationResult.objects.filter(
-                patient__person=OuterRef('pk')).order_by('-time')
-
-            sick_persons = Person.objects.annotate(
-                last_result=Subquery(
-                    results_subquery.values('result')[:1])).exclude(
-                last_result__in=[MedicalExaminationResult.RESULT_DEAD,
-                                 MedicalExaminationResult.RESULT_HEALTHY])
+            sick_persons = Person.objects.get_sick_persons()
 
             self.assertEqual(sick_persons.count(), 3)
 
     def test_num_of_sick_hospital_workers(self):
         with self.assertNumQueries(1):
-            results_subquery = MedicalExaminationResult.objects.filter(
-                patient__person=OuterRef('person')).order_by('-time')
-
-            sick_hospital_workers = HospitalWorker.objects.annotate(
-                last_result=Subquery(
-                    results_subquery.values('result')[:1])).exclude(
-                last_result__in=[MedicalExaminationResult.RESULT_DEAD,
-                                 MedicalExaminationResult.RESULT_HEALTHY])
+            sick_hospital_workers = Person.objects.get_sick_persons().filter(
+                hospital_jobs__isnull=False)
             self.assertEqual(sick_hospital_workers.count(), 1)
 
     def test_detect_potential_infected_patients_because_of_sick_hospital_worker(
@@ -481,7 +463,7 @@ class Covid19Tests(TestCase):
                                  MedicalExaminationResult.RESULT_HEALTHY]).distinct()
 
             num_of_patient_examined_by_sick_hospital_worker = len(
-                list(patient_examined_by_sick_hospital_worker))
+                patient_examined_by_sick_hospital_worker)
 
             self.assertEqual(num_of_patient_examined_by_sick_hospital_worker, 1)
             self.assertListEqual(
@@ -493,13 +475,13 @@ class Covid19Tests(TestCase):
             self):
         # Someone who is in risk group of corona is person that is older than 60
         with self.assertNumQueries(1):
-            department_workers = Person.objects.filter(
-                hospital_jobs__department__hospital=OuterRef('pk'),
-                age__gte=60).distinct()
-
             result = list(Hospital.objects.annotate(
                 num_of_hospital_workers_in_risk_of_corona=
-                Count(Subquery(department_workers.values('age')))).order_by())
+                Count(Case(
+                    When(departments__hospital_workers__person__age__gte=60,
+                         then=F(
+                             'departments__hospital_workers__person'))),
+                    distinct=True)).order_by())
 
             hospital1_num_of_hospital_workers_in_risk_of_corona = result[
                 0].num_of_hospital_workers_in_risk_of_corona
@@ -513,66 +495,91 @@ class Covid19Tests(TestCase):
                 1
             )
 
-    # def test_annotate_by_num_of_dead_from_corona(self):
-    #     # Dead from corona is someone who had corona and then died
-    #     with self.assertNumQueries(1):
-    #         patients_died_from_corona = Patient.objects.filter(
-    #             Q(
-    #                 medical_examination_results__result=MedicalExaminationResult.RESULT_CORONA),
-    #             Q(
-    #                 medical_examination_results__result=MedicalExaminationResult.RESULT_DEAD),
-    #             department__hospital=OuterRef('pk')).distinct()
-    #
-    #         result = Hospital.objects.annotate(
-    #             num_of_dead_from_corona=Count(Subquery(
-    #                 patients_died_from_corona.values('department')))).order_by()
-    #         print vars(result[1])
-    #
-    #         hospital1_num_of_dead_from_corona = result[
-    #             0].num_of_dead_from_corona
-    #         self.assertEqual(hospital1_num_of_dead_from_corona, 0)
-    #
-    #         hospital2_num_of_dead_from_corona = result[
-    #             1].num_of_dead_from_corona
-    #         self.assertEqual(hospital2_num_of_dead_from_corona, 2)
+    def test_annotate_by_num_of_dead_from_corona(self):
+        # Dead from corona is someone who had corona and then died
+        with self.assertNumQueries(1):
+            examination_results = MedicalExaminationResult.objects.filter(
+                patient=OuterRef('pk')).order_by('-time').values('result')
 
-            # def test_hospitals_with_at_least_two_dead_patients_from_corona(self):
-            #     # Dead from corona is someone who had corona and then died
-            #     with self.assertNumQueries(1):
-            #         # Define query by yourself
-            #         hospitals_with_more_than_two_dead_patients_from_corona = None
-            #
-            #         self.assertListEqual(
-            #             list(hospitals_with_more_than_two_dead_patients_from_corona),
-            #             [self.hospital2]
-            #         )
-            #
-            # def test_get_persons_with_specific_multiple_jobs(self):
-            #     """Author: Arthur
-            #     persons_with_multiple_jobs:
-            #         Get all persons who have multiple jobs and in the positions defined
-            #          by `jobs` and only them (iff relation).
-            #         If `None`, return all persons that hold more than one job (any).
-            #     """
-            #     # Note: `Count(Case(When(...)))`` won't work here
-            #     with self.assertNumQueries(4):
-            #         hospital_workers = Person.objects.persons_with_multiple_jobs()
-            #         self.assertListEqual(list(hospital_workers),
-            #                              [self.person6, self.person11])
-            #
-            #         hospital_workers = Person.objects.persons_with_multiple_jobs(
-            #             jobs=['Nurse'])
-            #         self.assertListEqual(list(hospital_workers), [self.person11])
-            #
-            #         hospital_workers = Person.objects.persons_with_multiple_jobs(
-            #             jobs=['Doctor'])
-            #         self.assertListEqual(list(hospital_workers), [])
-            #
-            #         hospital_workers = Person.objects.persons_with_multiple_jobs(
-            #             jobs=['Doctor', 'Nurse'])
-            #         self.assertListEqual(list(hospital_workers), [self.person6])
-            #
-            # def test_define_new_test_and_send_to_me(self):
-            #     # Define test that use at least one function that was not used in the previous tests and send to me
-            #     # Include the solution
-            #     self.fail()
+            patient_died_from_corona = Patient.objects.annotate(
+                last_result=Subquery(
+                    examination_results[:1]),
+                second_last_result=Subquery(examination_results[1:2])).filter(
+                department__hospital=OuterRef('pk'),
+                last_result=MedicalExaminationResult.RESULT_DEAD,
+                second_last_result=MedicalExaminationResult.RESULT_CORONA)
+
+            result = list(Hospital.objects.annotate(
+                num_of_dead_from_corona=Count(Case(When(Q(
+                    departments__patients_details__in=Subquery(
+                        patient_died_from_corona.values('pk'))),
+                    then=F('departments__patients_details__person'))),
+                    distinct=True)).order_by())
+
+            hospital1_num_of_dead_from_corona = result[
+                0].num_of_dead_from_corona
+            self.assertEqual(hospital1_num_of_dead_from_corona, 0)
+
+            hospital2_num_of_dead_from_corona = result[
+                1].num_of_dead_from_corona
+            self.assertEqual(hospital2_num_of_dead_from_corona, 2)
+
+    def test_hospitals_with_at_least_two_dead_patients_from_corona(self):
+        # Dead from corona is someone who had corona and then died
+        with self.assertNumQueries(1):
+            # Define query by yourself
+            examination_results = MedicalExaminationResult.objects.filter(
+                patient=OuterRef('pk')).order_by('-time').values('result')
+
+            patient_died_from_corona = Patient.objects.annotate(
+                last_result=Subquery(
+                    examination_results[:1]),
+                second_last_result=Subquery(examination_results[1:2])).filter(
+                department__hospital=OuterRef('pk'),
+                last_result=MedicalExaminationResult.RESULT_DEAD,
+                second_last_result=MedicalExaminationResult.RESULT_CORONA)
+
+            hospitals_with_more_than_two_dead_patients_from_corona = list(
+                Hospital.objects.annotate(
+                    num_of_dead_from_corona=Count(Case(When(Q(
+                        departments__patients_details__in=Subquery(
+                            patient_died_from_corona.values('pk'))),
+                        then=F('departments__patients_details__person'))),
+                        distinct=True)).filter(num_of_dead_from_corona__gte=2).order_by())
+
+            self.assertListEqual(
+                list(hospitals_with_more_than_two_dead_patients_from_corona),
+                [self.hospital2]
+            )
+
+    def test_get_persons_with_specific_multiple_jobs(self):
+        """Author: Arthur
+        persons_with_multiple_jobs:
+            Get all persons who have multiple jobs and in the positions defined
+             by `jobs` and only them (iff relation).
+            If `None`, return all persons that hold more than one job (any).
+        """
+        # Note: `Count(Case(When(...)))`` won't work here
+        with self.assertNumQueries(4):
+            hospital_workers = Person.objects.persons_with_multiple_jobs()
+
+            self.assertListEqual(list(hospital_workers),
+                                 [self.person6, self.person11])
+
+            hospital_workers = Person.objects.persons_with_multiple_jobs(
+                jobs=['Nurse'])
+            self.assertListEqual(list(hospital_workers), [self.person11])
+
+            hospital_workers = Person.objects.persons_with_multiple_jobs(
+                jobs=['Doctor'])
+
+            self.assertListEqual(list(hospital_workers), [])
+
+            hospital_workers = Person.objects.persons_with_multiple_jobs(
+                jobs=['Doctor', 'Nurse'])
+            self.assertListEqual(list(hospital_workers), [self.person6])
+
+    # def test_define_new_test_and_send_to_me(self):
+    #     # Define test that use at least one function that was not used in the previous tests and send to me
+    #     # Include the solution
+    #     self.fail()
