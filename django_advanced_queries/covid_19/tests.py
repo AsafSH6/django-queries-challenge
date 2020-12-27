@@ -406,6 +406,7 @@ class Covid19Tests(TestCase):
 
     def test_num_of_sick_persons(self):
         with self.assertNumQueries(1):
+            # Sick person - not dead or healthy
             sick_persons = Person.objects.get_sick_persons()
             self.assertEqual(sick_persons.count(), 3)
 
