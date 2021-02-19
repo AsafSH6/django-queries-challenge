@@ -4,23 +4,23 @@ from __future__ import unicode_literals
 from django.db import models
 
 
+class PatientQuerySet(models.QuerySet):
+    """Custom Queryset methods to patient model."""
+    def filter_by_examinations_results_options(self, results):
+        # Get matching patients ids.
+        patients_with_matching_examinations = \
+            MedicalExaminationResult.objects.filter(
+                result__in=results).values_list("patient", flat=True)
+
+        # Filter those ids from patients table.
+        return self.filter(
+            id__in=models.Subquery(patients_with_matching_examinations))
+
+
 class PatientManager(models.Manager):
     """Queryset manager to Patient model."""
-
-    class PatientQuerySet(models.QuerySet):
-        """Custom Queryset methods to patient model."""
-        def filter_by_examinations_results_options(self, results):
-            # Get matching patients ids.
-            patients_with_matching_examinations = \
-                MedicalExaminationResult.objects.filter(
-                    result__in=results).values_list("patient", flat=True)
-
-            # Filter those ids from patients table.
-            return self.filter(
-                id__in=models.Subquery(patients_with_matching_examinations))
-
     def get_queryset(self):
-        return PatientManager(self.model, using=self._db)
+        return PatientQuerySet(self.model, using=self._db)
 
 
 class HospitalWorkerManager(models.Manager):
