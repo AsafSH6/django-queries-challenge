@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+Django = "==1.11.29"
+django-extensions = "==2.2.8"
+pytz = "==2020.1"
+six = "==1.15.0"
+typing = "==3.7.4.3"
+
+[dev-packages]
+ipdb = "*"
+
+[requires]
+python_version = "2.7"

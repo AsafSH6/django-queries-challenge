@@ -4,8 +4,43 @@ from __future__ import unicode_literals
 from django.db import models
 
 
+class PatientManager(models.Manager):
+    """Queryset manager to Patient model."""
+
+    class PatientQuerySet(models.QuerySet):
+        """Custom Queryset methods to patient model."""
+        def filter_by_examinations_results_options(self, results):
+            # Get matching patients ids.
+            patients_with_matching_examinations = \
+                MedicalExaminationResult.objects.filter(
+                    result__in=results).values_list("patient", flat=True)
+
+            # Filter those ids from patients table.
+            return self.filter(
+                id__in=models.Subquery(patients_with_matching_examinations))
+
+    def get_queryset(self):
+        return PatientManager(self.model, using=self._db)
+
+
+class HospitalWorkerManager(models.Manager):
+    """Custom hospital worker model Queryset manager."""
+
+    def get_queryset(self):
+        # Fetch person (foreign key) in each query.
+        return \
+            super(models.Manager, self).get_queryset().select_related("person")
+
+
+class HospitalManager(models.Manager):
+    def get_queryset(self):
+        return super(models.Manager,
+                     self).get_queryset().prefetch_related("departments")
+
+
 class Hospital(models.Model):
-    name = models.CharField(db_index=True, max_length=255, blank=False, null=False, )
+    name = models.CharField(db_index=True, max_length=255, blank=False,
+                            null=False, )
     city = models.CharField(max_length=255, blank=False, null=False, )
 
     def __repr__(self):
@@ -16,7 +51,8 @@ class Hospital(models.Model):
 
 
 class Department(models.Model):
-    name = models.CharField(db_index=True, max_length=255, blank=False, null=False, )
+    name = models.CharField(db_index=True, max_length=255, blank=False,
+                            null=False, )
     hospital = models.ForeignKey(
         to=Hospital,
         related_name='departments',
@@ -40,7 +76,8 @@ class Person(models.Model):
     GENDER_FEMALE = 'Female'
     GENDER_UNDEFINED = 'Other'
 
-    name = models.CharField(db_index=True, max_length=255, blank=False, null=False)
+    name = models.CharField(db_index=True, max_length=255, blank=False,
+                            null=False)
     age = models.PositiveSmallIntegerField(null=False)
     gender = models.CharField(max_length=6, blank=False, null=False, choices=(
         (GENDER_MALE, GENDER_MALE),
@@ -59,6 +96,8 @@ class HospitalWorker(models.Model):
     POSITION_DOCTOR = 'Doctor'
     POSITION_NURSE = 'Nurse'
 
+    objects = HospitalWorkerManager()
+
     person = models.ForeignKey(
         to=Person,
         related_name='hospital_jobs',
@@ -72,10 +111,11 @@ class HospitalWorker(models.Model):
         null=False,
         on_delete=models.CASCADE,
     )
-    position = models.CharField(max_length=255, blank=False, null=False, choices=(
-        (POSITION_DOCTOR, POSITION_DOCTOR),
-        (POSITION_NURSE, POSITION_NURSE),
-    ))
+    position = models.CharField(max_length=255, blank=False, null=False,
+                                choices=(
+                                    (POSITION_DOCTOR, POSITION_DOCTOR),
+                                    (POSITION_NURSE, POSITION_NURSE),
+                                ))
 
     def __repr__(self):
         return '<Hospital worker {person}, working in {department} position {position}>'.format(
@@ -103,6 +143,8 @@ class Patient(models.Model):
         blank=False,
         on_delete=models.CASCADE,
     )
+
+    objects = PatientManager()
 
     def __repr__(self):
         return '<Patient {person} in {department}>'.format(
@@ -135,12 +177,13 @@ class MedicalExaminationResult(models.Model):
         blank=False,
         on_delete=models.CASCADE,
     )
-    result = models.CharField(max_length=255, blank=False, null=False, choices=(
-        (RESULT_HEALTHY, RESULT_HEALTHY),
-        (RESULT_CORONA, RESULT_CORONA),
-        (RESULT_BOT, RESULT_BOT),
-        (RESULT_DEAD, RESULT_DEAD),
-    ))
+    result = models.CharField(max_length=255, blank=False, null=False,
+                              choices=(
+                                  (RESULT_HEALTHY, RESULT_HEALTHY),
+                                  (RESULT_CORONA, RESULT_CORONA),
+                                  (RESULT_BOT, RESULT_BOT),
+                                  (RESULT_DEAD, RESULT_DEAD),
+                              ))
 
     def __repr__(self):
         return '<Medical examination result of {patient}, examined_by {examined_by}>'.format(
