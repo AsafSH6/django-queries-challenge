@@ -24,7 +24,7 @@ class PatientQuerySet(models.QuerySet):
         exams = MedicalExaminationResult.objects.filter(
             patient_id=models.OuterRef("id")
         ).values("patient_id")
-
+        import ipdb; ipdb.set_trace()
         # For each exam - attach it's patient's occurrences count.
         count_exams_for_patient = exams.annotate(
             count=models.Count("patient_id")
