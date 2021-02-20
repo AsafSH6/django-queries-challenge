@@ -2,25 +2,40 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models import Subquery
 
 
 class PatientQuerySet(models.QuerySet):
     """Custom Queryset methods to patient model."""
+
     def filter_by_examinations_results_options(self, results):
         # Get matching patients ids.
         patients_with_matching_examinations = \
             MedicalExaminationResult.objects.filter(
-                result__in=results).values_list("patient", flat=True)
+                result__in=results
+            ).values_list("patient", flat=True)
 
         # Filter those ids from patients table.
         return self.filter(
-            id__in=models.Subquery(patients_with_matching_examinations))
+            id__in=models.Subquery(patients_with_matching_examinations)
+        )
 
+    def get_highest_num_of_patient_medical_examinations(self):
+        exams = MedicalExaminationResult.objects.filter(
+            patient_id=models.OuterRef("id")
+        ).values("patient_id")
 
-class PatientManager(models.Manager):
-    """Queryset manager to Patient model."""
-    def get_queryset(self):
-        return PatientQuerySet(self.model, using=self._db)
+        # For each exam - attach it's patient's occurrences count.
+        count_exams_for_patient = exams.annotate(
+            count=models.Count("patient_id")
+        ).values("count")
+
+        # For each patient - attach it's exam count.
+        exams_king = self.annotate(
+            exam_count=models.Subquery(count_exams_for_patient)
+        ).order_by("-exam_count").values("exam_count").first()
+
+        return exams_king["exam_count"]
 
 
 class HospitalWorkerManager(models.Manager):
@@ -28,13 +43,13 @@ class HospitalWorkerManager(models.Manager):
 
     def get_queryset(self):
         # Fetch person (foreign key) in each query.
-        return \
-            super(models.Manager, self).get_queryset().select_related("person")
+        return super(HospitalWorkerManager,
+                     self).get_queryset().select_related("person")
 
 
 class HospitalManager(models.Manager):
     def get_queryset(self):
-        return super(models.Manager,
+        return super(HospitalManager,
                      self).get_queryset().prefetch_related("departments")
 
 
@@ -42,6 +57,8 @@ class Hospital(models.Model):
     name = models.CharField(db_index=True, max_length=255, blank=False,
                             null=False, )
     city = models.CharField(max_length=255, blank=False, null=False, )
+
+    objects = HospitalManager()
 
     def __repr__(self):
         return '<Hospital {name}>'.format(name=self.name, )
@@ -144,7 +161,7 @@ class Patient(models.Model):
         on_delete=models.CASCADE,
     )
 
-    objects = PatientManager()
+    objects = PatientQuerySet.as_manager()
 
     def __repr__(self):
         return '<Patient {person} in {department}>'.format(
