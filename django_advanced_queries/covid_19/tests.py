@@ -391,18 +391,18 @@ class Covid19Tests(TestCase):
             actual_result = [department.avg_age_of_patients
                              for department in departments_with_avg_age_of_patients.order_by()]
             self.assertEqual(actual_result, [36, 48.75])
-    #
-    # def test_doctor_performed_the_most_medical_examinations(self):
-    #     with self.assertNumQueries(1):
-    #         doctor_performed_the_most_m_e = HospitalWorker.objects.get_worker_performed_most_medical_examinations(
-    #             filter_kwargs={'position': 'Doctor'},
-    #             exclude_kwargs={}
-    #         )
-    #
-    #         self.assertEqual(
-    #             doctor_performed_the_most_m_e,
-    #             self.hospital_worker3
-    #         )
+
+    def test_doctor_performed_the_most_medical_examinations(self):
+        with self.assertNumQueries(1):
+            doctor_performed_the_most_m_e = HospitalWorker.objects.get_worker_performed_most_medical_examinations(
+                filter_kwargs={'position': 'Doctor'},
+                exclude_kwargs={}
+            )
+
+            self.assertEqual(
+                doctor_performed_the_most_m_e,
+                self.hospital_worker3
+            )
     #
     # def test_num_of_sick_persons(self):
     #     with self.assertNumQueries(1):

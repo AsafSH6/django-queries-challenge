@@ -24,7 +24,7 @@ class PatientQuerySet(models.QuerySet):
         exams = MedicalExaminationResult.objects.filter(
             patient_id=models.OuterRef("id")
         ).values("patient_id")
-        import ipdb; ipdb.set_trace()
+
         # For each exam - attach it's patient's occurrences count.
         count_exams_for_patient = exams.annotate(
             count=models.Count("patient_id")
@@ -38,6 +38,13 @@ class PatientQuerySet(models.QuerySet):
         return exams_king["exam_count"]
 
 
+class DepartmentQuerySet(models.QuerySet):
+    def annotate_avg_age_of_patients(self):
+        return self.annotate(
+            avg_age_of_patients=models.Avg("patients_details__person__age")
+        )
+
+
 class HospitalWorkerManager(models.Manager):
     """Custom hospital worker model Queryset manager."""
 
@@ -45,6 +52,22 @@ class HospitalWorkerManager(models.Manager):
         # Fetch person (foreign key) in each query.
         return super(HospitalWorkerManager,
                      self).get_queryset().select_related("person")
+
+    def get_worker_performed_most_medical_examinations(self,
+                                                       filter_kwargs,
+                                                       exclude_kwargs):
+        filter_worker_exams = MedicalExaminationResult.objects.filter(
+            examined_by__id=models.OuterRef("id")
+        ).values("id")
+
+        count_worker_exams = filter_worker_exams.annotate(
+            count=models.Count("id")
+        ).values("count")
+
+        exams_performed_annotation = self.annotate(
+            count=Subquery(count_worker_exams)
+        )
+        return exams_performed_annotation.order_by("-count").first()
 
 
 class HospitalManager(models.Manager):
@@ -77,6 +100,8 @@ class Department(models.Model):
         blank=False,
         on_delete=models.CASCADE,
     )
+
+    objects = DepartmentQuerySet.as_manager()
 
     def __repr__(self):
         return '<Department {department_name} in hospital {hospital}>'.format(
