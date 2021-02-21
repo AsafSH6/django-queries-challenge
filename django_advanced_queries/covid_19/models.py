@@ -58,16 +58,21 @@ class HospitalWorkerManager(models.Manager):
                                                        exclude_kwargs):
         filter_worker_exams = MedicalExaminationResult.objects.filter(
             examined_by__id=models.OuterRef("id")
-        ).values("id")
+        ).values("examined_by__id")
 
         count_worker_exams = filter_worker_exams.annotate(
-            count=models.Count("id")
+            count=models.Count("examined_by__id")
         ).values("count")
 
         exams_performed_annotation = self.annotate(
             count=Subquery(count_worker_exams)
         )
-        return exams_performed_annotation.order_by("-count").first()
+
+        best_worker_ever = exams_performed_annotation.filter(
+            **filter_kwargs
+        ).order_by("-count").first()
+
+        return best_worker_ever
 
 
 class HospitalManager(models.Manager):
