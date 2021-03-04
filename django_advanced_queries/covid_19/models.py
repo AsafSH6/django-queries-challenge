@@ -2,10 +2,40 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.db.models import Subquery
+
+class SickPersonsMixin:
+    """Mixin that responsible fetching sick objects from manager."""
+
+    def get_sick_records(self, patient_id_attribute):
+        """Get sick objects from current class.
+
+        patient_id_attribute (str): Reference to patient id of current model.
+
+        Example:
+            self.get_sick_objects("person__patients_details__id")
+            "person__patients_details__id" - Points to the current model
+            patient id.
+        """
+        # Extract latest exam.
+        latest_exam = MedicalExaminationResult.objects.filter(
+            patient__id=models.OuterRef(patient_id_attribute)
+        ).order_by('-time').values("result")
+
+        # Attach for each record - the latest exam result he got.
+        records_with_latest_results = self.annotate(
+            latest_result=models.Subquery(latest_exam[:1]),
+        )
+
+        # Get only results that are not healthy/dead.
+        sick_records = records_with_latest_results.filter(
+            ~models.Q(latest_result=MedicalExaminationResult.RESULT_HEALTHY) &
+            ~models.Q(latest_result=MedicalExaminationResult.RESULT_DEAD)
+        )
+
+        return sick_records
 
 
-class PatientQuerySet(models.QuerySet):
+class PatientQuerySet(models.QuerySet, SickPersonsMixin):
     """Custom Queryset methods to patient model."""
 
     def filter_by_examinations_results_options(self, results):
@@ -37,6 +67,18 @@ class PatientQuerySet(models.QuerySet):
 
         return exams_king["exam_count"]
 
+    def get_sick_patients(self):
+        return self.get_sick_records(patient_id_attribute="id")
+
+    def filter_by_examined_hospital_workers(self, hospital_workers):
+        # TODO: Add hospital workers.
+        # TODO: Check it 1 query.
+        sick_workers = HospitalWorker.objects.get_sick_workers().values("id")
+        sick_workers_patients = MedicalExaminationResult.objects.filter(
+            examined_by__in=sick_workers
+        ).values("patient__id")
+        return self.filter(id__in=sick_workers_patients)
+
 
 class DepartmentQuerySet(models.QuerySet):
     def annotate_avg_age_of_patients(self):
@@ -45,7 +87,14 @@ class DepartmentQuerySet(models.QuerySet):
         )
 
 
-class HospitalWorkerManager(models.Manager):
+class HospitalManager(models.Manager):
+    def get_queryset(self):
+        # Load departments once.
+        return super(HospitalManager,
+                     self).get_queryset().prefetch_related("departments")
+
+
+class HospitalWorkerManager(models.Manager, SickPersonsMixin):
     """Custom hospital worker model Queryset manager."""
 
     def get_queryset(self):
@@ -56,29 +105,44 @@ class HospitalWorkerManager(models.Manager):
     def get_worker_performed_most_medical_examinations(self,
                                                        filter_kwargs,
                                                        exclude_kwargs):
+        # TODO: Figure out what is exclude_kwargs aim?
+
+        # Get specific worker exams.
         filter_worker_exams = MedicalExaminationResult.objects.filter(
             examined_by__id=models.OuterRef("id")
         ).values("examined_by__id")
 
+        # For each worker - count the amount of exams he performed.
         count_worker_exams = filter_worker_exams.annotate(
             count=models.Count("examined_by__id")
-        ).values("count")
+        ).values("count")  # Extract only count field (Subquery).
 
+        # Attach the count values to the workers.
         exams_performed_annotation = self.annotate(
-            count=Subquery(count_worker_exams)
+            count=models.Subquery(count_worker_exams)
         )
 
+        # Extract the highest value count (best worker).
         best_worker_ever = exams_performed_annotation.filter(
             **filter_kwargs
         ).order_by("-count").first()
 
         return best_worker_ever
 
+    def get_sick_workers(self):
+        return self.get_sick_records(patient_id_attribute=
+                                     "person__patients_details__id")
 
-class HospitalManager(models.Manager):
-    def get_queryset(self):
-        return super(HospitalManager,
-                     self).get_queryset().prefetch_related("departments")
+
+class PersonQuerySet(models.QuerySet, SickPersonsMixin):
+    """Person extra queryset functionality."""
+
+    def get_sick_persons(self):
+        return self.get_sick_records(patient_id_attribute=
+                                     "patients_details__id")
+
+
+#################### MODELS ###############################
 
 
 class Hospital(models.Model):
@@ -131,6 +195,8 @@ class Person(models.Model):
         (GENDER_FEMALE, GENDER_FEMALE),
         (GENDER_UNDEFINED, GENDER_UNDEFINED),
     ))
+
+    objects = PersonQuerySet.as_manager()
 
     def __repr__(self):
         return '<Person {name} age {age}>'.format(name=self.name, age=self.age)

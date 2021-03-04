@@ -403,44 +403,44 @@ class Covid19Tests(TestCase):
                 doctor_performed_the_most_m_e,
                 self.hospital_worker3
             )
-    #
-    # def test_num_of_sick_persons(self):
-    #     with self.assertNumQueries(1):
-    #         # Sick person - not dead or healthy
-    #         sick_persons = Person.objects.get_sick_persons()
-    #         self.assertEqual(sick_persons.count(), 3)
-    #
-    # def test_num_of_sick_hospital_workers(self):
-    #     with self.assertNumQueries(1):
-    #         sick_hospital_workers = HospitalWorker.objects.get_sick_workers()
-    #         self.assertEqual(sick_hospital_workers.count(), 1)
-    #
-    # def test_detect_potential_infected_patients_because_of_sick_hospital_worker(self):
-    #     with self.assertNumQueries(2):
-    #         patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
-    #             hospital_workers=NotImplementedError
-    #         )
-    #         num_of_patient_examined_by_sick_hospital_worker = patient_examined_by_sick_hospital_worker.count()
-    #
-    #         self.assertEqual(num_of_patient_examined_by_sick_hospital_worker, 1)
-    #         self.assertListEqual(
-    #             list(patient_examined_by_sick_hospital_worker),
-    #             [self.patient1]
-    #         )
-    #
-    #     # Now improve the test to hit DB once only
-    #     with self.assertNumQueries(1):
-    #         patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
-    #             hospital_workers=NotImplementedError
-    #         )
-    #         num_of_patient_examined_by_sick_hospital_worker = patient_examined_by_sick_hospital_worker.count()
-    #
-    #         self.assertEqual(num_of_patient_examined_by_sick_hospital_worker, 1)
-    #         self.assertListEqual(
-    #             list(patient_examined_by_sick_hospital_worker),
-    #             [self.patient1]
-    #         )
-    #
+
+    def test_num_of_sick_persons(self):
+        with self.assertNumQueries(1):
+            # Sick person - not dead or healthy.
+            sick_persons = Person.objects.get_sick_persons()
+            self.assertEqual(sick_persons.count(), 3)
+
+    def test_num_of_sick_hospital_workers(self):
+        with self.assertNumQueries(1):
+            sick_hospital_workers = HospitalWorker.objects.get_sick_workers()
+            self.assertEqual(sick_hospital_workers.count(), 1)
+
+    def test_detect_potential_infected_patients_because_of_sick_hospital_worker(self):
+        with self.assertNumQueries(2):
+            patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
+                hospital_workers=NotImplementedError
+            )
+            num_of_patient_examined_by_sick_hospital_worker = patient_examined_by_sick_hospital_worker.count()
+
+            self.assertEqual(num_of_patient_examined_by_sick_hospital_worker, 1)
+            self.assertListEqual(
+                list(patient_examined_by_sick_hospital_worker),
+                [self.patient1]
+            )
+
+        # Now improve the test to hit DB once only
+        with self.assertNumQueries(1):
+            patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
+                hospital_workers=NotImplementedError
+            )
+            num_of_patient_examined_by_sick_hospital_worker = patient_examined_by_sick_hospital_worker.count()
+
+            self.assertEqual(num_of_patient_examined_by_sick_hospital_worker, 1)
+            self.assertListEqual(
+                list(patient_examined_by_sick_hospital_worker),
+                [self.patient1]
+            )
+
     # def test_number_of_hospital_workers_that_in_risk_group_of_corona_per_hospital(self):
     #     # Someone who is in risk group of corona is person that is older than 60
     #     with self.assertNumQueries(1):
