@@ -144,6 +144,18 @@ class HospitalManager(models.Manager):
 
         return hospital_with_corona_dead_details
 
+    def annotate_hospitals_with_time_of_first_corona_sick(self):
+        first_corona_time = MedicalExaminationResult.objects.filter(
+            patient=models.OuterRef("id"),
+            result=MedicalExaminationResult.RESULT_CORONA,
+        ).order_by("-time").values("time")[:1]
+
+        hospital_with_corona_dead_details = self.annotate(
+            first_corona_time=models.Subquery(first_corona_time)
+        )
+
+        return hospital_with_corona_dead_details
+
 
 class HospitalWorkerManager(models.Manager, SickPersonsMixin):
     """Custom hospital worker model Queryset manager."""

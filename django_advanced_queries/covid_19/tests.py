@@ -514,12 +514,15 @@ class Covid19Tests(TestCase):
         # Note: `Count(Case(When(...)))`` won't work here
         with self.assertNumQueries(4):
             hospital_workers = Person.objects.persons_with_multiple_jobs()
-            self.assertListEqual(list(hospital_workers), [self.person6, self.person11])
+            self.assertListEqual(list(hospital_workers),
+                                 [self.person6, self.person11])
 
-            hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Nurse'])
+            hospital_workers = Person.objects.persons_with_multiple_jobs(
+                jobs=['Nurse'])
             self.assertListEqual(list(hospital_workers), [self.person11])
 
-            hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Doctor'])
+            hospital_workers = Person.objects.persons_with_multiple_jobs(
+                jobs=['Doctor'])
             # I think there is a problem here, correct me if I wrong.
             # Manually Fixed: There are duplications in the insertion process.
             # If the duplications should appear, the first empty param test
@@ -527,9 +530,20 @@ class Covid19Tests(TestCase):
             # If the duplications shouldn't appear, the following is the fix.
             self.assertListEqual(list(hospital_workers), [self.person6])
 
-            hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Doctor', 'Nurse'])
-            self.assertListEqual(list(hospital_workers), [self.person6, self.person11])
+            hospital_workers = Person.objects.persons_with_multiple_jobs(
+                jobs=['Doctor', 'Nurse'])
+            self.assertListEqual(list(hospital_workers),
+                                 [self.person6, self.person11])
 
-    # def test_annotate_hospitals_with_arrival_date_of_first_corona_sick(self):
-    #     with self.assertNumQueries(2):
-    #         import ipdb; ipdb.set_trace()
+    def test_annotate_hospitals_with_time_of_first_corona_sick(self):
+        with self.assertNumQueries(1):
+            hospitals = Hospital.objects. \
+                annotate_hospitals_with_time_of_first_corona_sick()
+            import ipdb; ipdb.set_trace()
+            len(hospitals)
+
+            hospital1_date = hospitals[0].first_corona_time
+            self.assertEqual(hospital1_date, 0)
+
+            hospital2_date = hospitals[1].first_corona_time
+            self.assertEqual(hospital2_date, 2)
