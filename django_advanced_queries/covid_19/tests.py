@@ -549,3 +549,5 @@ class Covid19Tests(TestCase):
             hospital2_date = hospitals[1].first_corona_time
             self.assertEqual(hospital2_date,
                              datetime.datetime(2020, 4, 26, 16, 10))
+
+    # TODO: Fix Arthur test and Hospital annotations queries amount.
