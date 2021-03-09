@@ -59,16 +59,8 @@ class PatientManager(models.Manager, SickPersonsMixin):
         return self.get_sick_records(patient_id_attribute="id")
 
     def filter_by_examined_hospital_workers(self, hospital_workers):
-        hospital_workers_filter = models.Q() \
-            if type(hospital_workers) is not list \
-            else models.Q(id__in=[worker.id for worker in hospital_workers])
-
-        sick_workers = HospitalWorker.objects.get_sick_workers().filter(
-            hospital_workers_filter
-        ).values("id")
-
         sick_workers_patients = MedicalExaminationResult.objects.filter(
-            examined_by__in=sick_workers
+            examined_by__in=hospital_workers
         ).values("patient")
 
         return self.filter(id__in=sick_workers_patients)
@@ -146,9 +138,9 @@ class HospitalManager(models.Manager):
 
     def annotate_hospitals_with_time_of_first_corona_sick(self):
         first_corona_time = MedicalExaminationResult.objects.filter(
-            patient=models.OuterRef("id"),
+            patient__department__hospital=models.OuterRef("id"),
             result=MedicalExaminationResult.RESULT_CORONA,
-        ).order_by("-time").values("time")[:1]
+        ).order_by("time").values("time")[:1]
 
         hospital_with_corona_dead_details = self.annotate(
             first_corona_time=models.Subquery(first_corona_time)

@@ -421,7 +421,7 @@ class Covid19Tests(TestCase):
             self):
         with self.assertNumQueries(2):
             patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
-                hospital_workers=NotImplementedError
+                hospital_workers=HospitalWorker.objects.get_sick_workers()
             )
             num_of_patient_examined_by_sick_hospital_worker = patient_examined_by_sick_hospital_worker.count()
 
@@ -435,7 +435,7 @@ class Covid19Tests(TestCase):
         # Now improve the test to hit DB once only
         with self.assertNumQueries(1):
             patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
-                hospital_workers=NotImplementedError
+                hospital_workers=HospitalWorker.objects.get_sick_workers()
             )
 
             # len evaluate the entire table and prepare the values to the
@@ -539,11 +539,13 @@ class Covid19Tests(TestCase):
         with self.assertNumQueries(1):
             hospitals = Hospital.objects. \
                 annotate_hospitals_with_time_of_first_corona_sick()
-            import ipdb; ipdb.set_trace()
+
             len(hospitals)
 
             hospital1_date = hospitals[0].first_corona_time
-            self.assertEqual(hospital1_date, 0)
+            self.assertEqual(hospital1_date,
+                             datetime.datetime(2020, 3, 20, 12, 13))
 
             hospital2_date = hospitals[1].first_corona_time
-            self.assertEqual(hospital2_date, 2)
+            self.assertEqual(hospital2_date,
+                             datetime.datetime(2020, 4, 26, 16, 10))
