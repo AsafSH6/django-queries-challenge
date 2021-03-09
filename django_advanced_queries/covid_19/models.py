@@ -2,6 +2,8 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models.functions import Coalesce
+
 
 class SickPersonsMixin:
     """Mixin that responsible fetching sick objects from manager."""
@@ -12,13 +14,13 @@ class SickPersonsMixin:
         patient_id_attribute (str): Reference to patient id of current model.
 
         Example:
-            self.get_sick_objects("person__patients_details__id")
-            "person__patients_details__id" - Points to the current model
+            self.get_sick_objects("person__patients_details")
+            "person__patients_details" - Points to the current model
             patient id.
         """
         # Extract latest exam.
         latest_exam = MedicalExaminationResult.objects.filter(
-            patient__id=models.OuterRef(patient_id_attribute)
+            patient=models.OuterRef(patient_id_attribute)
         ).order_by('-time').values("result")
 
         # Attach for each record - the latest exam result he got.
@@ -35,34 +37,20 @@ class SickPersonsMixin:
         return sick_records
 
 
-class PatientQuerySet(models.QuerySet, SickPersonsMixin):
+class PatientManager(models.Manager, SickPersonsMixin):
     """Custom Queryset methods to patient model."""
 
     def filter_by_examinations_results_options(self, results):
-        # Get matching patients ids.
-        patients_with_matching_examinations = \
-            MedicalExaminationResult.objects.filter(
-                result__in=results
-            ).values_list("patient", flat=True)
-
-        # Filter those ids from patients table.
+        # Get the patients that have result which appear in results list.
         return self.filter(
-            id__in=models.Subquery(patients_with_matching_examinations)
-        )
+            medical_examination_results__result__in=results
+        ).distinct()
 
     def get_highest_num_of_patient_medical_examinations(self):
-        exams = MedicalExaminationResult.objects.filter(
-            patient_id=models.OuterRef("id")
-        ).values("patient_id")
-
-        # For each exam - attach it's patient's occurrences count.
-        count_exams_for_patient = exams.annotate(
-            count=models.Count("patient_id")
-        ).values("count")
-
         # For each patient - attach it's exam count.
+        # It possible to count medical_examination_results because it queryset.
         exams_king = self.annotate(
-            exam_count=models.Subquery(count_exams_for_patient)
+            exam_count=models.Count("medical_examination_results")
         ).order_by("-exam_count").values("exam_count").first()
 
         return exams_king["exam_count"]
@@ -71,12 +59,18 @@ class PatientQuerySet(models.QuerySet, SickPersonsMixin):
         return self.get_sick_records(patient_id_attribute="id")
 
     def filter_by_examined_hospital_workers(self, hospital_workers):
-        # TODO: Add hospital workers.
-        # TODO: Check it 1 query.
-        sick_workers = HospitalWorker.objects.get_sick_workers().values("id")
+        hospital_workers_filter = models.Q() \
+            if type(hospital_workers) is not list \
+            else models.Q(id__in=[worker.id for worker in hospital_workers])
+
+        sick_workers = HospitalWorker.objects.get_sick_workers().filter(
+            hospital_workers_filter
+        ).values("id")
+
         sick_workers_patients = MedicalExaminationResult.objects.filter(
             examined_by__in=sick_workers
-        ).values("patient__id")
+        ).values("patient")
+
         return self.filter(id__in=sick_workers_patients)
 
 
@@ -93,6 +87,63 @@ class HospitalManager(models.Manager):
         return super(HospitalManager,
                      self).get_queryset().prefetch_related("departments")
 
+    def annotate_by_num_of_hospital_workers_in_risk_of_corona(self):
+        # Someone who is in risk group of corona is person that is older
+        # than 60
+        workers_in_risk = HospitalWorker.objects.filter(
+            person__age__gte=60,
+            department__hospital=models.OuterRef("id")
+        ).values("department__hospital", "id").distinct()
+
+        risk_per_hospital = workers_in_risk.annotate(
+            risky_count=models.Count("department__hospital")
+        ).values("risky_count")
+
+        # Perform group by aggregation with workers in risk count.
+        # Taking the original queryset (without prefetching) because it takes
+        # extra query for get all departments.
+        # we don't need here fetching all hospital departments.
+        hospitals_with_risk_counter = \
+            super(HospitalManager, self).get_queryset().annotate(
+                num_of_hospital_workers_in_risk_of_corona=
+                models.Subquery(risk_per_hospital,
+                                output_field=models.IntegerField())
+            )
+
+        return hospitals_with_risk_counter
+
+    def annotate_by_num_of_dead_from_corona(self):
+        # Extract reason of dead (Take the one exam before the last).
+        patients = MedicalExaminationResult.objects.filter(
+            patient=models.OuterRef("id")
+        ).order_by("-time").values("result")
+
+        dead_corona_patient_details = Patient.objects.annotate(
+            is_dead=models.Subquery(patients[:1]),
+            reason_of_dead=models.Subquery(patients[1:2]),
+        ).filter(
+            is_dead=MedicalExaminationResult.RESULT_DEAD,
+            reason_of_dead=MedicalExaminationResult.RESULT_CORONA
+        )
+
+        hospitals_per_dead_patient = dead_corona_patient_details.filter(
+            department__hospital=models.OuterRef("id"),
+        ).values(
+            "department__hospital"
+        ).annotate(
+            count=models.Count("id")
+        ).values("count")
+
+        hospital_with_corona_dead_details = self.annotate(
+            # Coalesce to prevent None values (Take the first non-none value).
+            num_of_dead_from_corona=Coalesce(
+                models.Subquery(hospitals_per_dead_patient,
+                                output_field=
+                                models.IntegerField()), 0)
+        )
+
+        return hospital_with_corona_dead_details
+
 
 class HospitalWorkerManager(models.Manager, SickPersonsMixin):
     """Custom hospital worker model Queryset manager."""
@@ -105,33 +156,23 @@ class HospitalWorkerManager(models.Manager, SickPersonsMixin):
     def get_worker_performed_most_medical_examinations(self,
                                                        filter_kwargs,
                                                        exclude_kwargs):
-        # TODO: Figure out what is exclude_kwargs aim?
-
-        # Get specific worker exams.
-        filter_worker_exams = MedicalExaminationResult.objects.filter(
-            examined_by__id=models.OuterRef("id")
-        ).values("examined_by__id")
-
         # For each worker - count the amount of exams he performed.
-        count_worker_exams = filter_worker_exams.annotate(
-            count=models.Count("examined_by__id")
-        ).values("count")  # Extract only count field (Subquery).
-
-        # Attach the count values to the workers.
-        exams_performed_annotation = self.annotate(
-            count=models.Subquery(count_worker_exams)
+        count_worker_exams = self.annotate(
+            count=models.Count("medical_examination_results")
         )
 
         # Extract the highest value count (best worker).
-        best_worker_ever = exams_performed_annotation.filter(
+        best_worker_ever = count_worker_exams.filter(
             **filter_kwargs
+        ).exclude(
+            **exclude_kwargs
         ).order_by("-count").first()
 
         return best_worker_ever
 
     def get_sick_workers(self):
         return self.get_sick_records(patient_id_attribute=
-                                     "person__patients_details__id")
+                                     "person__patients_details")
 
 
 class PersonQuerySet(models.QuerySet, SickPersonsMixin):
@@ -139,7 +180,25 @@ class PersonQuerySet(models.QuerySet, SickPersonsMixin):
 
     def get_sick_persons(self):
         return self.get_sick_records(patient_id_attribute=
-                                     "patients_details__id")
+                                     "patients_details")
+
+    def persons_with_multiple_jobs(self, jobs=None):
+        target_queryset = HospitalWorker.objects
+
+        if jobs is not None:
+            target_queryset = target_queryset.filter(position__in=jobs)
+
+        multiple_jobs_workers = target_queryset.values(
+            "person_id"
+        ).annotate(
+            jobs=models.Count("person_id")
+        ).filter(
+            jobs__gte=2,
+        ).values("person_id")
+
+        return self.filter(
+            id__in=multiple_jobs_workers
+        )
 
 
 #################### MODELS ###############################
@@ -257,7 +316,7 @@ class Patient(models.Model):
         on_delete=models.CASCADE,
     )
 
-    objects = PatientQuerySet.as_manager()
+    objects = PatientManager()
 
     def __repr__(self):
         return '<Patient {person} in {department}>'.format(
