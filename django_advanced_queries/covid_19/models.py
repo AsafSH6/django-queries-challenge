@@ -74,7 +74,7 @@ class PatientManager(models.Manager, SickPersonsMixin):
         return self.filter(id__in=sick_workers_patients)
 
 
-class DepartmentQuerySet(models.QuerySet):
+class DepartmentManager(models.Manager):
     def annotate_avg_age_of_patients(self):
         return self.annotate(
             avg_age_of_patients=models.Avg("patients_details__person__age")
@@ -175,8 +175,8 @@ class HospitalWorkerManager(models.Manager, SickPersonsMixin):
                                      "person__patients_details")
 
 
-class PersonQuerySet(models.QuerySet, SickPersonsMixin):
-    """Person extra queryset functionality."""
+class PersonManager(models.Manager, SickPersonsMixin):
+    """Person extra manager functionality."""
 
     def get_sick_persons(self):
         return self.get_sick_records(patient_id_attribute=
@@ -229,7 +229,7 @@ class Department(models.Model):
         on_delete=models.CASCADE,
     )
 
-    objects = DepartmentQuerySet.as_manager()
+    objects = DepartmentManager()
 
     def __repr__(self):
         return '<Department {department_name} in hospital {hospital}>'.format(
@@ -255,7 +255,7 @@ class Person(models.Model):
         (GENDER_UNDEFINED, GENDER_UNDEFINED),
     ))
 
-    objects = PersonQuerySet.as_manager()
+    objects = PersonManager()
 
     def __repr__(self):
         return '<Person {name} age {age}>'.format(name=self.name, age=self.age)
