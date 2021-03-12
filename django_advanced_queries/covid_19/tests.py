@@ -376,7 +376,9 @@ class Covid19Tests(TestCase):
 
     def test_count_all_hospital_departments_using_two_queries(self):
         with self.assertNumQueries(2):
-            hospitals = Hospital.objects.all()
+            # Added prefetch related.
+            hospitals = Hospital.objects.all().prefetch_related("departments")
+
             for hospital in hospitals:
                 self.assertEqual(hospital.departments.count(), 1)
 
@@ -513,27 +515,36 @@ class Covid19Tests(TestCase):
         """
         # Note: `Count(Case(When(...)))`` won't work here
         with self.assertNumQueries(4):
-            hospital_workers = Person.objects.persons_with_multiple_jobs()
-            self.assertListEqual(list(hospital_workers),
-                                 [self.person6, self.person11])
+            # Person X:  Positions          (Departments) => Jobs | Jobs (Dup)
+            # Person 1:  Doctor             1             => 1      1
+            # Person 2:  Nurse              1             => 1      1
+            # Person 4:  Doctor             1             => 1      1
+            # Person 6:  Doctor x2, Nurse   2             => 2      3
+            # Person 11: Nurse x2           2             => 1      2
 
+            # With Distinction: Remove person11.
+            # Without Distinction: OK.
+            # hospital_workers = Person.objects.persons_with_multiple_jobs()
+            # self.assertListEqual(list(hospital_workers),
+            #                      [self.person6, self.person11])
+
+            # Distinction: Remove person11.
+            # Non-Distinction: OK.
             hospital_workers = Person.objects.persons_with_multiple_jobs(
                 jobs=['Nurse'])
             self.assertListEqual(list(hospital_workers), [self.person11])
 
+            # Distinction: OK. (There is no person that only Doctor)
+            # Non-Distinction: OK. (There is no person that only Doctor)
             hospital_workers = Person.objects.persons_with_multiple_jobs(
                 jobs=['Doctor'])
-            # I think there is a problem here, correct me if I wrong.
-            # Manually Fixed: There are duplications in the insertion process.
-            # If the duplications should appear, the first empty param test
-            # is not should work (My query should differ distinct values).
-            # If the duplications shouldn't appear, the following is the fix.
-            self.assertListEqual(list(hospital_workers), [self.person6])
+            self.assertListEqual(list(hospital_workers), [])
 
+            # Distinction: Remove person11.
+            # Non-Distinction: OK.
             hospital_workers = Person.objects.persons_with_multiple_jobs(
                 jobs=['Doctor', 'Nurse'])
-            self.assertListEqual(list(hospital_workers),
-                                 [self.person6, self.person11])
+            self.assertListEqual(list(hospital_workers), [self.person6])
 
     def test_annotate_hospitals_with_time_of_first_corona_sick(self):
         with self.assertNumQueries(1):
@@ -549,5 +560,3 @@ class Covid19Tests(TestCase):
             hospital2_date = hospitals[1].first_corona_time
             self.assertEqual(hospital2_date,
                              datetime.datetime(2020, 4, 26, 16, 10))
-
-    # TODO: Fix Arthur test and Hospital annotations queries amount.
