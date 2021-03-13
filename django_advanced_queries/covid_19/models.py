@@ -199,16 +199,18 @@ class PersonManager(models.Manager, SickPersonsMixin):
                                      "patients_details")
 
     def persons_with_multiple_jobs(self, jobs=None):
-        not_given_job_condition = models.Q()
+        """Take only persons with multiple jobs that has the given jobs.
 
-        # For every person:
-        #   > Filter all conditions and validate it empty
-        #   ===> Not contains different positions (from the given).
-        #
-        #   > Annotate which each position in the given jobs.
-        #   > Take only the persons with '1' value on all the positions
-        #   annotations.
-        #   ===> Exactly only given positions.
+        For every person:
+           > Filter all conditions and validate it empty
+           ===> Not contains different positions (from the given).
+
+           > Annotate which each position in the given jobs.
+           > Take only the persons with '1' value on all the positions
+           annotations.
+           ===> Exactly only given positions.
+        """
+        not_given_job_condition = models.Q()
 
         if jobs is not None:
             # Defining the given jobs conditions for matching worker.
