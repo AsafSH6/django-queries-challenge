@@ -10,6 +10,7 @@ class SickPersonsMixin(object):
 
     Help us fetching sick persons from each person that is patient model.
     """
+
     def get_sick_records(self, patient_id_attribute):
         """Get sick objects from current class.
 
@@ -198,32 +199,63 @@ class PersonManager(models.Manager, SickPersonsMixin):
                                      "patients_details")
 
     def persons_with_multiple_jobs(self, jobs=None):
-        jobs_condition = models.Q()
+        not_given_job_condition = models.Q()
+
+        # For every person:
+        #   > Filter all conditions and validate it empty
+        #   ===> Not contains different positions (from the given).
+        #
+        #   > Annotate which each position in the given jobs.
+        #   > Take only the persons with '1' value on all the positions
+        #   annotations.
+        #   ===> Exactly only given positions.
 
         if jobs is not None:
+            # Defining the given jobs conditions for matching worker.
+            matching_workers_conditions = {
+                job: 1 for job in jobs
+            }
+
+            # Value for job existence annotation per each person.
+            jobs_existence_annotation = {
+                job: models.Count(
+                    models.Subquery(
+                        HospitalWorker.objects.filter(
+                            position=job,
+                            person=models.OuterRef("person")
+                        ).values("position")
+                    )
+                )
+                for job in jobs
+            }
+
+            # Make the for detecting person with not given job.
             for job in jobs:
-                jobs_condition |= models.Q(position=job)
+                not_given_job_condition &= ~models.Q(position=job)
 
-        jobs_checker = HospitalWorker.objects.filter(
-            person=models.OuterRef("person"),
-        ).values("position").annotate(
-            count=models.Count("position")
-        ).values("count")
+            # Search matching workers.
+            matching_workers = HospitalWorker.objects.annotate(
+                not_matching_jobs=models.Count(
+                    models.Subquery(
+                        HospitalWorker.objects.filter(
+                            not_given_job_condition,
+                            person=models.OuterRef("person")
+                        ).values("person")
+                    )
+                ),
+                **jobs_existence_annotation
+            ).filter(
+                # Filter only the workers with 0 not matching jobs.
+                not_matching_jobs=0,
+                **matching_workers_conditions
+            ).values("person")
 
-        # Check for every job => count != 0.
-        # Check for every job not in jobs => count=0
-
-        # We remove accidentally person that are only doctor when search
-        # [doctor, nurse].
-
-        matching_workers = HospitalWorker.objects.annotate(
-            mismatch_jobs=models.Count(models.Subquery(jobs_checker))
-        ).filter(mismatch_jobs=len(jobs)).values("id")
-
-        import ipdb; ipdb.set_trace()
+        else:
+            # All of the workers are in potential matching workers.
+            matching_workers = HospitalWorker.objects.all().values("person")
 
         multiple_jobs_workers = HospitalWorker.objects.filter(
-            id__in=matching_workers
+            person__in=matching_workers
         ).values(
             "person", "position", "department"
         ).annotate(

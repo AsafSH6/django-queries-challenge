@@ -515,33 +515,18 @@ class Covid19Tests(TestCase):
         """
         # Note: `Count(Case(When(...)))`` won't work here
         with self.assertNumQueries(4):
-            # Person X:  Positions          (Departments) => Jobs | Jobs (Dup)
-            # Person 1:  Doctor             1             => 1      1
-            # Person 2:  Nurse              1             => 1      1
-            # Person 4:  Doctor             1             => 1      1
-            # Person 6:  Doctor x2, Nurse   2             => 2      3
-            # Person 11: Nurse x2           2             => 1      2
+            hospital_workers = Person.objects.persons_with_multiple_jobs()
+            self.assertListEqual(list(hospital_workers),
+                                 [self.person6, self.person11])
 
-            # With Distinction: Remove person11.
-            # Without Distinction: OK.
-            # hospital_workers = Person.objects.persons_with_multiple_jobs()
-            # self.assertListEqual(list(hospital_workers),
-            #                      [self.person6, self.person11])
-
-            # Distinction: Remove person11.
-            # Non-Distinction: OK.
             hospital_workers = Person.objects.persons_with_multiple_jobs(
                 jobs=['Nurse'])
             self.assertListEqual(list(hospital_workers), [self.person11])
 
-            # Distinction: OK. (There is no person that only Doctor)
-            # Non-Distinction: OK. (There is no person that only Doctor)
             hospital_workers = Person.objects.persons_with_multiple_jobs(
                 jobs=['Doctor'])
             self.assertListEqual(list(hospital_workers), [])
 
-            # Distinction: Remove person11.
-            # Non-Distinction: OK.
             hospital_workers = Person.objects.persons_with_multiple_jobs(
                 jobs=['Doctor', 'Nurse'])
             self.assertListEqual(list(hospital_workers), [self.person6])
