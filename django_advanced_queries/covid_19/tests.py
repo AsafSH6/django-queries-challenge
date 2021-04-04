@@ -371,7 +371,8 @@ class Covid19Tests(TestCase):
 
     def test_hospital_worker_alon_age_using_single_query(self):
         with self.assertNumQueries(1):
-            alon = HospitalWorker.objects.get(person__name='Alon')
+            alon = HospitalWorker.objects.select_related("person").\
+                get(person__name='Alon')
             self.assertEqual(alon.person.age, 65)
 
     def test_count_all_hospital_departments_using_two_queries(self):
@@ -462,7 +463,7 @@ class Covid19Tests(TestCase):
             # Must evaluate here for caching purposes (I could cache it
             # in the queryset but the order_by ruin it).
             # Another solution is changing _result_cache - overkill.
-            len(result)
+            result = list(result)
 
             hospital1_num_of_hospital_workers_in_risk_of_corona = result[
                 0].num_of_hospital_workers_in_risk_of_corona
@@ -482,7 +483,7 @@ class Covid19Tests(TestCase):
                 annotate_by_num_of_dead_from_corona().order_by()
 
             # Again, caching.
-            len(result)
+            result = list(result)
 
             hospital1_num_of_dead_from_corona = result[
                 0].num_of_dead_from_corona
@@ -532,11 +533,9 @@ class Covid19Tests(TestCase):
             self.assertListEqual(list(hospital_workers), [self.person6])
 
     def test_annotate_hospitals_with_time_of_first_corona_sick(self):
-        with self.assertNumQueries(1):
+        with self.assertNumQueries(2):
             hospitals = Hospital.objects. \
                 annotate_hospitals_with_time_of_first_corona_sick()
-
-            len(hospitals)
 
             hospital1_date = hospitals[0].first_corona_time
             self.assertEqual(hospital1_date,

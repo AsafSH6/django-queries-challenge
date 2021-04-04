@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+
 from django.db.models.functions import Coalesce
 
 
@@ -33,9 +34,9 @@ class SickPersonsMixin(object):
         )
 
         # Get only results that are not healthy/dead.
-        sick_records = records_with_latest_results.filter(
-            ~models.Q(latest_result=MedicalExaminationResult.RESULT_HEALTHY) &
-            ~models.Q(latest_result=MedicalExaminationResult.RESULT_DEAD)
+        sick_records = records_with_latest_results.exclude(
+            latest_result__in=[MedicalExaminationResult.RESULT_HEALTHY,
+                               MedicalExaminationResult.RESULT_DEAD]
         )
 
         return sick_records
@@ -47,28 +48,30 @@ class SickPersonsMixin(object):
 class PatientManager(models.Manager, SickPersonsMixin):
     """Custom Queryset methods to patient model."""
 
-    def filter_by_examinations_results_options(self, results):
+    def filter_by_examinations_results_options(self, results,
+                                               *args, **kwargs):
         # Get the patients that have result which appear in results list.
         return self.filter(
             medical_examination_results__result__in=results
-        ).distinct()
+            ,*args, **kwargs).distinct()
 
     def get_highest_num_of_patient_medical_examinations(self):
         # For each patient - attach it's exam count.
         # It possible to count medical_examination_results because it queryset.
         exams_king = self.annotate(
             exam_count=models.Count("medical_examination_results")
-        ).order_by("-exam_count").values("exam_count").first()
+        ).aggregate(count=models.Max("exam_count"))
 
-        return exams_king["exam_count"]
+        return exams_king["count"]
 
     def get_sick_patients(self):
         return self.get_sick_records(patient_id_attribute="id")
 
-    def filter_by_examined_hospital_workers(self, hospital_workers):
+    def filter_by_examined_hospital_workers(self, hospital_workers, *args,
+                                            **kwargs):
         sick_workers_patients = self.filter(
             medical_examination_results__examined_by__in=hospital_workers
-        ).values("id")
+        ,*args, **kwargs).values("id")
 
         return self.filter(id__in=sick_workers_patients)
 
@@ -155,11 +158,6 @@ class HospitalManager(models.Manager):
 
 class HospitalWorkerManager(models.Manager, SickPersonsMixin):
     """Custom hospital worker model Queryset manager."""
-
-    def get_queryset(self):
-        # Fetch person (foreign key) in each query.
-        return super(HospitalWorkerManager,
-                     self).get_queryset().select_related("person")
 
     def get_worker_performed_most_medical_examinations(self,
                                                        filter_kwargs,
