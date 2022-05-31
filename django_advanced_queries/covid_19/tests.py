@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 
 import datetime
 
+from django.db.models import Count
 from django.test import TestCase
 
 from django_advanced_queries.covid_19.models import (
@@ -370,20 +371,21 @@ class Covid19Tests(TestCase):
 
     def test_hospital_worker_alon_age_using_single_query(self):
         with self.assertNumQueries(1):
-            alon = HospitalWorker.objects.get(person__name='Alon')
+            alon = HospitalWorker.objects.select_related('person').get(person__name='Alon')
             self.assertEqual(alon.person.age, 65)
 
     def test_count_all_hospital_departments_using_two_queries(self):
-        with self.assertNumQueries(2):
-            hospitals = Hospital.objects.all()
-            for hospital in hospitals:
-                self.assertEqual(hospital.departments.count(), 1)
+        with self.assertNumQueries(1):  # was 2 originally
+            departments_per_hospital = Hospital.objects.annotate(departments_count=Count('departments'))
+            for hospital in departments_per_hospital:
+                self.assertEqual(hospital.departments_count, 1)
 
     def test_highest_num_of_patient_medical_examinations(self):
         with self.assertNumQueries(1):
             highest_num_of_patient_m_e = Patient.objects.get_highest_num_of_patient_medical_examinations()
             self.assertEqual(highest_num_of_patient_m_e, 4)
 
+    # STOPPED HERE
     def test_average_age_of_patients_in_every_department(self):
         with self.assertNumQueries(1):
             departments_with_avg_age_of_patients = Department.objects.annotate_avg_age_of_patients()
@@ -489,7 +491,7 @@ class Covid19Tests(TestCase):
         with self.assertNumQueries(4):
             hospital_workers = Person.objects.persons_with_multiple_jobs()
             self.assertListEqual(list(hospital_workers), [self.person6, self.person11])
-            
+
             hospital_workers = Person.objects.persons_with_multiple_jobs(jobs=['Nurse'])
             self.assertListEqual(list(hospital_workers), [self.person11])
 

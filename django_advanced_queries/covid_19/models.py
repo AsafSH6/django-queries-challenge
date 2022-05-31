@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models import Count
 
 
 class Hospital(models.Model):
@@ -88,7 +89,20 @@ class HospitalWorker(models.Model):
         return repr(self)
 
 
+class PatientManager(models.Manager):
+    def filter_by_examinations_results_options(self, results):
+        return MedicalExaminationResult.objects.filter(result__in=results).values('patient__person__name').distinct()
+
+    def get_highest_num_of_patient_medical_examinations(self):
+        return self.annotate(m_e_count=Count('medical_examination_results'))\
+            .order_by('-m_e_count')\
+            .first()\
+            .m_e_count
+
+
 class Patient(models.Model):
+    objects = PatientManager()
+
     person = models.ForeignKey(
         to=Person,
         related_name='patients_details',
