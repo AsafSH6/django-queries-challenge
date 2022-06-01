@@ -1,5 +1,5 @@
 from django.db import models
-from django.db.models import Avg, Count, Case, When, Q, Value
+from django.db.models import Avg, Count, OuterRef, Subquery
 
 
 class DepartmentManager(models.Manager):
@@ -15,6 +15,12 @@ class HospitalWorkerManager(models.Manager):
             .order_by('-m_e_count')\
             .first()
 
+    def get_sick_workers(self):
+        from django_advanced_queries.covid_19.models import Person
+
+        sick_persons = Person.objects.get_sick_persons()
+        return self.filter(person__in=sick_persons.all())
+
 
 class PatientManager(models.Manager):
     def filter_by_examinations_results_options(self, results, **kwargs):
@@ -25,3 +31,16 @@ class PatientManager(models.Manager):
             .order_by('-m_e_count')\
             .first()\
             .m_e_count
+
+
+class PersonManager(models.Manager):
+    # taken from Asaf's solution
+    def get_sick_persons(self):
+        from django_advanced_queries.covid_19.models import MedicalExaminationResult
+
+        chronological_results = MedicalExaminationResult.objects\
+            .filter(patient__person=OuterRef('pk'))\
+            .order_by('-time')
+        return self.exclude(patients_details__isnull=True)\
+            .annotate(last_m_e=Subquery(chronological_results.values('result')[:1]))\
+            .exclude(last_m_e__in=(MedicalExaminationResult.RESULT_DEAD, MedicalExaminationResult.RESULT_HEALTHY))

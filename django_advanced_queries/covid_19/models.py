@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 
 from django.db import models
 
-from models_managers import DepartmentManager, HospitalWorkerManager, PatientManager
+from models_managers import DepartmentManager, HospitalWorkerManager, PatientManager, PersonManager
 
 
 class Hospital(models.Model):
@@ -43,6 +43,8 @@ class Person(models.Model):
     GENDER_MALE = 'Male'
     GENDER_FEMALE = 'Female'
     GENDER_UNDEFINED = 'Other'
+
+    objects = PersonManager()
 
     name = models.CharField(db_index=True, max_length=255, blank=False, null=False)
     age = models.PositiveSmallIntegerField(null=False)

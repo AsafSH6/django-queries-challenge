@@ -405,17 +405,17 @@ class Covid19Tests(TestCase):
                 self.hospital_worker3
             )
 
-    # def test_num_of_sick_persons(self):
-    #     with self.assertNumQueries(1):
-    #         # Sick person - not dead or healthy
-    #         sick_persons = Person.objects.get_sick_persons()
-    #         self.assertEqual(sick_persons, 3)
+    def test_num_of_sick_persons(self):
+        with self.assertNumQueries(1):
+            # Sick person - not dead or healthy
+            sick_persons = Person.objects.get_sick_persons()
+            self.assertEqual(sick_persons.count(), 3)
 
-    # def test_num_of_sick_hospital_workers(self):
-    #     with self.assertNumQueries(1):
-    #         sick_hospital_workers = HospitalWorker.objects.get_sick_workers()
-    #         self.assertEqual(sick_hospital_workers.count(), 1)
-    #
+    def test_num_of_sick_hospital_workers(self):
+        with self.assertNumQueries(1):
+            sick_hospital_workers = HospitalWorker.objects.get_sick_workers()
+            self.assertEqual(sick_hospital_workers.count(), 1)
+
     # def test_detect_potential_infected_patients_because_of_sick_hospital_worker(self):
     #     with self.assertNumQueries(2):
     #         patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
