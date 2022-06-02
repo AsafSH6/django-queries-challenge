@@ -32,6 +32,9 @@ class PatientManager(models.Manager):
             .first()\
             .m_e_count
 
+    def filter_by_examined_hospital_workers(self, hospital_workers, **kwargs):
+        return self.filter(medical_examination_results__examined_by__in=hospital_workers, **kwargs).distinct()
+
 
 class PersonManager(models.Manager):
     # taken from Asaf's solution
