@@ -2,9 +2,15 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.db.models import Subquery, F, OuterRef
+
+from django_advanced_queries.covid_19.queries import PatientManager, DepartmentManager, HospitalWorkerManager, \
+    PersonManager, HospitalManager
 
 
 class Hospital(models.Model):
+    objects = HospitalManager()
+
     name = models.CharField(db_index=True, max_length=255, blank=False, null=False, )
     city = models.CharField(max_length=255, blank=False, null=False, )
 
@@ -16,6 +22,8 @@ class Hospital(models.Model):
 
 
 class Department(models.Model):
+    objects = DepartmentManager()
+
     name = models.CharField(db_index=True, max_length=255, blank=False, null=False, )
     hospital = models.ForeignKey(
         to=Hospital,
@@ -36,6 +44,8 @@ class Department(models.Model):
 
 
 class Person(models.Model):
+    objects = PersonManager()
+
     GENDER_MALE = 'Male'
     GENDER_FEMALE = 'Female'
     GENDER_UNDEFINED = 'Other'
@@ -56,6 +66,8 @@ class Person(models.Model):
 
 
 class HospitalWorker(models.Model):
+    objects = HospitalWorkerManager()
+
     POSITION_DOCTOR = 'Doctor'
     POSITION_NURSE = 'Nurse'
 
@@ -89,6 +101,8 @@ class HospitalWorker(models.Model):
 
 
 class Patient(models.Model):
+    objects = PatientManager()
+
     person = models.ForeignKey(
         to=Person,
         related_name='patients_details',

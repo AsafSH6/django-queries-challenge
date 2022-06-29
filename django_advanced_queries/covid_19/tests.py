@@ -5,6 +5,10 @@ import datetime
 
 from django.test import TestCase
 
+from django.db.models import F, Sum, Count, Max
+
+import django; django.setup()
+
 from django_advanced_queries.covid_19.models import (
     Hospital,
     Department,
@@ -366,16 +370,16 @@ class Covid19Tests(TestCase):
             num_of_hospitalized_because_of_botism_or_corona = Patient.objects.filter_by_examinations_results_options(
                 results=('Botism', 'Corona')
             ).count()
-            self.assertEqual(num_of_hospitalized_because_of_botism_or_corona, 7)
+            self.assertEqual(num_of_hospitalized_because_of_botism_or_corona, 10)
 
     def test_hospital_worker_alon_age_using_single_query(self):
         with self.assertNumQueries(1):
-            alon = HospitalWorker.objects.get(person__name='Alon')
+            alon = HospitalWorker.objects.select_related('person').get(person__name='Alon')
             self.assertEqual(alon.person.age, 65)
 
     def test_count_all_hospital_departments_using_two_queries(self):
         with self.assertNumQueries(2):
-            hospitals = Hospital.objects.all()
+            hospitals = Hospital.objects.all().prefetch_related('departments')
             for hospital in hospitals:
                 self.assertEqual(hospital.departments.count(), 1)
 
@@ -418,7 +422,7 @@ class Covid19Tests(TestCase):
     def test_detect_potential_infected_patients_because_of_sick_hospital_worker(self):
         with self.assertNumQueries(2):
             patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
-                hospital_workers=NotImplementedError
+                hospital_workers=HospitalWorker.objects.get_sick_workers()
             )
             num_of_patient_examined_by_sick_hospital_worker = patient_examined_by_sick_hospital_worker.count()
 
@@ -431,9 +435,9 @@ class Covid19Tests(TestCase):
         # Now improve the test to hit DB once only
         with self.assertNumQueries(1):
             patient_examined_by_sick_hospital_worker = Patient.objects.filter_by_examined_hospital_workers(
-                hospital_workers=NotImplementedError
+                hospital_workers=HospitalWorker.objects.get_sick_workers()
             )
-            num_of_patient_examined_by_sick_hospital_worker = patient_examined_by_sick_hospital_worker.count()
+            num_of_patient_examined_by_sick_hospital_worker = len(patient_examined_by_sick_hospital_worker)
 
             self.assertEqual(num_of_patient_examined_by_sick_hospital_worker, 1)
             self.assertListEqual(
