@@ -2,15 +2,16 @@
 from __future__ import unicode_literals
 
 from django.db import models
-from django.db.models import Subquery, F, OuterRef
 
-from django_advanced_queries.covid_19.queries import PatientManager, DepartmentManager, HospitalWorkerManager, \
-    PersonManager, HospitalManager
+from django_advanced_queries.covid_19.queries import (
+    PatientManager,
+    DepartmentManager,
+    HospitalWorkerManager,
+    PersonManager
+)
 
 
 class Hospital(models.Model):
-    objects = HospitalManager()
-
     name = models.CharField(db_index=True, max_length=255, blank=False, null=False, )
     city = models.CharField(max_length=255, blank=False, null=False, )
 

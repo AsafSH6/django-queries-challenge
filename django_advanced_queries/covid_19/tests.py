@@ -370,7 +370,7 @@ class Covid19Tests(TestCase):
             num_of_hospitalized_because_of_botism_or_corona = Patient.objects.filter_by_examinations_results_options(
                 results=('Botism', 'Corona')
             ).count()
-            self.assertEqual(num_of_hospitalized_because_of_botism_or_corona, 10)
+            self.assertEqual(num_of_hospitalized_because_of_botism_or_corona, 7)
 
     def test_hospital_worker_alon_age_using_single_query(self):
         with self.assertNumQueries(1):

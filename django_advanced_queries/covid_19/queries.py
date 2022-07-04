@@ -1,18 +1,18 @@
 from django.db import models
-from django.db.models import Count, Max, Avg, F, Subquery, OuterRef, Q
+from django.db.models import Count, Max, Avg, Subquery, OuterRef
 
 
 class PatientManager(models.Manager):
-    def filter_by_examinations_results_options(self, results):
-        return self.filter(medical_examination_results__result__in=results)
+    def filter_by_examinations_results_options(self, results, *args, **kwargs):
+        return self.filter(medical_examination_results__result__in=results, *args, **kwargs).distinct()
 
     def get_highest_num_of_patient_medical_examinations(self):
         return self.annotate(Count('medical_examination_results')).aggregate(
             Max('medical_examination_results__count')
         )['medical_examination_results__count__max']
 
-    def filter_by_examined_hospital_workers(self, hospital_workers):
-        return self.filter(medical_examination_results__examined_by__in=hospital_workers).distinct()
+    def filter_by_examined_hospital_workers(self, hospital_workers, *args, **kwargs):
+        return self.filter(medical_examination_results__examined_by__in=hospital_workers, *args, **kwargs).distinct()
 
 
 class DepartmentManager(models.Manager):
